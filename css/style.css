@@ -1,0 +1,379 @@
+/* --- Сброс и База --- */
+* { box-sizing: border-box; }
+body {
+    margin: 0; 
+    padding: 0;
+    background-color: #f0f8f0; 
+    color: #003300;
+    font-family: 'Arial', sans-serif; 
+    font-size: 13px;
+}
+a { 
+    color: #005500; 
+    text-decoration: none; 
+    cursor: pointer; 
+    font-weight: bold; 
+}
+a:hover { color: #d00; text-decoration: underline; }
+
+.hidden { display: none !important; }
+
+/* --- Разметка (Layout) --- */
+.container { 
+    max-width: 900px; 
+    margin: 0 auto; 
+    padding: 10px; 
+}
+
+/* --- Навигация --- */
+#board-nav {
+    padding: 5px 10px; 
+    background: #d1e8d1; 
+    border-bottom: 1px solid #aaccaa;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+.nav-links-container a { margin: 0 3px; }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+
+.status-loading { color: orange; font-size: 10px; }
+.status-online { color: green; font-weight: bold; font-size: 10px; }
+.status-offline { color: red; font-weight: bold; font-size: 10px; }
+
+/* --- Шапка (Header) --- */
+.logo { text-align: center; margin: 20px 0; }
+#frog-logo { 
+    font-size: 40px; 
+    cursor: help; 
+    user-select: none; 
+    display: inline-block; 
+}
+#frog-logo:active { transform: scale(0.95); }
+.logo h1 { 
+    color: #2e7d32; 
+    margin: 5px 0; 
+    font-size: 24px; 
+    text-shadow: 1px 1px 0 #fff; 
+}
+.subtitle { font-size: 16px; color: #446644; }
+
+/* --- Объявления --- */
+#global-announcement {
+    background: #fff0f0; 
+    color: #d32f2f; 
+    border: 1px dashed #d32f2f;
+    padding: 5px; 
+    margin: 10px auto; 
+    max-width: 600px; 
+    font-weight: bold;
+}
+.announcement-edit-btn { 
+    margin-left: 5px; 
+    cursor: pointer; 
+    color: blue; 
+    font-size: 10px; 
+}
+
+/* --- Формы --- */
+.post-form-container {
+    background: #d1e8d1; 
+    border: 1px solid #aaccaa;
+    max-width: 500px; 
+    margin: 0 auto 20px; 
+    padding: 10px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+.form-header { 
+    text-align: center; 
+    font-weight: bold; 
+    color: #1b5e20; 
+    margin-bottom: 8px; 
+}
+.form-row { 
+    display: flex; 
+    margin-bottom: 4px; 
+    align-items: center; 
+}
+.form-label {
+    background: #a5d6a7; 
+    color: #003300; 
+    font-weight: bold;
+    padding: 2px 5px; 
+    width: 80px; 
+    font-size: 11px;
+    border: 1px solid #81c784; 
+    margin-right: 5px; 
+    flex-shrink: 0;
+}
+.form-input { 
+    flex-grow: 1; 
+    padding: 3px; 
+    border: 1px solid #81c784; 
+    font-size: 12px; 
+    width: 100%; 
+}
+textarea.form-input { height: 80px; resize: vertical; }
+
+.submit-btn { 
+    background: #fff; 
+    border: 1px solid #66bb6a; 
+    cursor: pointer; 
+    padding: 2px 8px; 
+    font-weight: bold; 
+}
+.submit-btn:hover { background: #e8f5e9; }
+
+.file-wrapper { 
+    display: flex; 
+    align-items: center; 
+    flex-grow: 1; 
+    gap: 5px; 
+}
+.separator { font-size: 10px; color: #555; }
+
+/* Админ-панель внутри формы */
+#admin-posting-options { 
+    background: #ffe0b2; 
+    padding: 5px; 
+    margin-bottom: 5px; 
+    font-size: 11px; 
+    border: 1px solid #ffcc80; 
+}
+
+/* --- Посты и Треды --- */
+.thread { 
+    margin-bottom: 30px; 
+    padding-bottom: 10px; 
+    border-bottom: 1px solid #ccc; 
+    clear: both; 
+}
+
+.post { 
+    /* display: flow-root заставляет контейнер растягиваться под float элементы (картинки) */
+    display: flow-root; 
+    /* overflow: visible позволяет выпадающему меню реакций выходить за границы поста */
+    overflow: visible; 
+    margin-bottom: 4px; 
+}
+
+.op-post .post-header { color: #117743; }
+
+.reply-container {
+    background: #e0f2e0; 
+    border: 1px solid #b7c5d9;
+    padding: 6px; 
+    margin: 2px 0; 
+    display: table; 
+    min-width: 300px;
+    border-radius: 3px;
+    overflow: visible; /* Важно для реакций */
+}
+
+/* Контент поста */
+.post-header { 
+    font-size: 12px; 
+    margin-bottom: 5px; 
+    color: #555; 
+}
+.subject { color: #0f0c5d; font-weight: bold; }
+.name { color: #117743; font-weight: bold; }
+.admin-capcode { color: red !important; font-weight: bold; }
+.date { color: #444; }
+.post-number { cursor: pointer; }
+.post-number:hover { color: #d00; }
+
+.post-image { 
+    float: left; 
+    margin: 0 15px 5px 0; 
+    max-width: 200px; 
+    max-height: 200px; 
+    border: 1px solid #aaccaa; 
+    cursor: pointer; 
+}
+.post-image.expanded { 
+    max-width: 90%; 
+    max-height: 90vh; 
+}
+
+.post-message { 
+    font-size: 14px; 
+    line-height: 1.4; 
+    word-wrap: break-word; 
+    white-space: pre-wrap; 
+    margin: 8px 0; 
+    color: #002200;
+}
+.greentext { color: #789922; font-weight: bold; }
+
+.file-info { font-size: 10px; margin-bottom: 2px; color: #557755; }
+
+/* --- Реакции --- */
+.reactions-container { 
+    margin-top: 5px; 
+    clear: both; 
+    font-size: 12px; 
+    user-select: none; 
+    position: relative; 
+}
+
+.reaction-tag {
+    display: inline-block; 
+    border: 1px solid #ccc; 
+    background: #fff;
+    padding: 1px 5px; 
+    border-radius: 4px; 
+    margin-right: 4px; 
+    cursor: pointer;
+    margin-bottom: 2px;
+}
+.reaction-tag:hover { background: #eee; }
+.reaction-tag.active { 
+    background: #c8e6c9; 
+    border-color: #4caf50; 
+    font-weight: bold; 
+    color: #1b5e20; 
+}
+
+.reaction-picker-btn { 
+    cursor: pointer; 
+    color: #888; 
+    font-weight: bold; 
+    padding: 0 5px; 
+    border: 1px dashed #ccc; 
+    border-radius: 4px; 
+    font-size: 10px;
+    display: inline-block;
+}
+.reaction-picker-btn:hover { color: #333; border-color: #888; }
+
+.reaction-picker {
+    display: none;
+    position: absolute; 
+    top: 20px; 
+    left: 0;
+    background: white; 
+    border: 1px solid #888;
+    padding: 5px; 
+    z-index: 100;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+    white-space: nowrap;
+    border-radius: 4px;
+}
+.reaction-option { 
+    cursor: pointer; 
+    font-size: 18px; 
+    padding: 2px 5px; 
+    display: inline-block; 
+    transition: transform 0.2s; 
+}
+.reaction-option:hover { 
+    transform: scale(1.3); 
+    background: #eee; 
+    border-radius: 3px; 
+}
+
+/* --- Админка --- */
+#admin-indicator { 
+    background: red; 
+    color: white; 
+    padding: 2px 5px; 
+    font-size: 10px; 
+    font-weight: bold;
+    border-radius: 2px;
+}
+.admin-controls { font-size: 10px; margin-left: 5px; }
+.btn-control { 
+    cursor: pointer; 
+    margin-left: 3px; 
+    border: 1px solid transparent; 
+    padding: 0 2px;
+}
+.btn-control:hover { background: #ddd; border: 1px solid #999; }
+
+.icon-pinned { color: red; margin-right: 5px; font-weight: bold; }
+.icon-locked { color: orange; margin-right: 5px; font-weight: bold; }
+
+.admin-meta-info { 
+    background: #333; 
+    color: #fff; 
+    padding: 1px 3px; 
+    font-size: 9px; 
+    margin-left: 3px; 
+    border-radius: 2px; 
+    font-family: monospace;
+}
+
+/* --- Модальное окно --- */
+.modal-overlay {
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 1000;
+}
+.modal-box { 
+    background: #fff; 
+    padding: 20px; 
+    border-radius: 5px; 
+    text-align: center; 
+    width: 300px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+.modal-box h3 { margin-top: 0; color: #1b5e20; }
+.modal-input { 
+    width: 100%; 
+    padding: 8px; 
+    margin: 10px 0; 
+    border: 1px solid #ccc; 
+}
+.modal-buttons { display: flex; justify-content: space-between; }
+.modal-btn { 
+    padding: 5px 15px; 
+    cursor: pointer; 
+    background: #2e7d32; 
+    color: #fff; 
+    border: none; 
+    border-radius: 3px;
+}
+.modal-btn.close { background: #d32f2f; }
+
+.warning-bar { 
+    background: #ffebee; 
+    color: #b71c1c; 
+    padding: 10px; 
+    text-align: center; 
+    font-size: 12px; 
+    border: 1px solid #ef9a9a;
+    margin: 10px;
+}
+
+.loader { text-align: center; padding: 20px; font-weight: bold; color: #555; }
+
+.nav-links { 
+    text-align: center; 
+    margin-bottom: 10px; 
+    font-size: 14px;
+}
+
+footer {
+    margin-top: 50px;
+    text-align: center;
+    font-size: 10px;
+    color: #88aa88;
+    padding-bottom: 20px;
+}
+
+/* --- Адаптивность (Mobile) --- */
+@media (max-width: 600px) {
+    .container { padding: 5px; }
+    .post-image { max-width: 120px; max-height: 120px; }
+    .reply-container { min-width: 0; width: 100%; }
+    .form-label { width: 60px; }
+    .file-wrapper { flex-wrap: wrap; }
+    #input-file-url { width: 100%; margin-bottom: 2px; }
+    #board-nav { flex-direction: column; gap: 5px; }
+}
