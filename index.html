@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeChan - Имиджборд (Firebase)</title>
+    <style>
+        /* --- CSS Reset & Basics --- */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8f0;
+            color: #003300;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+        }
+        a { color: #005500; text-decoration: none; cursor: pointer; font-weight: bold;}
+        a:hover { color: #00aa00; text-decoration: underline; }
+        
+        /* --- Layout --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* --- Header & Nav --- */
+        #board-nav {
+            padding: 5px;
+            border-bottom: 1px solid #aaccaa;
+            margin-bottom: 10px;
+            background: #d1e8d1;
+            font-size: 14px;
+        }
+        #board-nav span { margin: 0 5px; }
+        
+        .logo {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .logo h1 {
+            color: #2e7d32;
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #fff;
+        }
+        .logo .subtitle {
+            font-size: 16px;
+            color: #446644;
+        }
+        .logo-img {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* --- Forms --- */
+        .post-form-container {
+            background-color: #d1e8d1;
+            border: 1px solid #aaccaa;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 20px auto;
+            padding: 10px;
+            display: table;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .form-row { margin-bottom: 4px; display: flex; align-items: center; flex-wrap: wrap;}
+        .form-label {
+            background: #a5d6a7;
+            color: #003300;
+            font-weight: bold;
+            padding: 2px 5px;
+            width: 100px;
+            font-size: 11px;
+            border: 1px solid #81c784;
+            margin-right: 5px;
+            flex-shrink: 0;
+        }
+        .form-input { flex-grow: 1; padding: 2px; border: 1px solid #81c784; font-size: 12px; }
+        textarea.form-input { height: 100px; resize: vertical; width: 100%; }
+        
+        button.submit-btn {
+            background: #fff;
+            border: 1px solid #66bb6a;
+            color: #2e7d32;
+            cursor: pointer;
+            padding: 2px 8px;
+            font-weight: bold;
+        }
+        button.submit-btn:hover {
+            background: #e8f5e9;
+        }
+        
+        /* File Input Styling */
+        .file-upload-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin-top: 2px;
+        }
+        .file-upload-or { margin: 0 5px; font-size: 10px; color: #555; }
+        
+        /* Admin Button Style */
+        .admin-login-btn {
+            font-size: 10px;
+            color: #88aa88;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        /* --- Threads & Posts --- */
+        .thread { margin-bottom: 40px; border-bottom: 1px solid #aaccaa; padding-bottom: 20px; clear: both;}
+        
+        .post {
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        
+        /* OP Post Style */
+        .op-post {
+            display: block;
+        }
+
+        /* Reply Style */
+        .reply-container {
+            display: table;
+            background-color: #e0f2e0;
+            border: 1px solid #b2dfdb;
+            margin: 2px 0;
+            padding: 5px;
+            min-width: 400px;
+            max-width: 100%;
+            border-radius: 2px;
+        }
+
+        .post-header {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .subject { color: #1b5e20; font-weight: bold; }
+        .name { color: #2e7d32; font-weight: bold; }
+        .trip { color: #228854; font-weight: normal; }
+        .date { color: #446644; }
+        .id { color: #446644; cursor: pointer;}
+        .post-number { color: #446644; cursor: pointer; }
+        
+        /* Admin Styles */
+        .admin-capcode {
+            color: #ff0000 !important;
+            font-weight: bold;
+        }
+        .delete-btn {
+            color: red;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 5px;
+            font-size: 11px;
+        }
+        .delete-btn:hover {
+            background: red;
+            color: white;
+        }
+        .admin-panel-indicator {
+            background: red;
+            color: white;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+        }
+
+        .file-info {
+            font-size: 11px;
+            margin-bottom: 2px;
+            color: #557755;
+        }
+
+        .post-image {
+            float: left;
+            margin: 0 20px 5px 0;
+            max-width: 250px;
+            max-height: 250px;
+            cursor: pointer;
+            border: 1px solid #aaccaa;
+        }
+        
+        .post-image.expanded {
+            max-width: 90%;
+            max-height: 90vh;
+        }
+
+        .post-message {
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            color: #002200;
+        }
+
+        /* --- Utility --- */
+        .greentext { color: #558b2f; font-weight: bold; }
+        .spoiler { background: #000; color: #000; }
+        .spoiler:hover { color: #fff; }
+        .error-msg { color: #d32f2f; text-align: center; margin: 10px; font-weight: bold; }
+        .loading-msg { color: #2e7d32; text-align: center; margin: 20px; font-weight: bold; font-style: italic;}
+        
+        /* Updated Warning Bar */
+        .warning-bar { background: #ffebee; color: #b71c1c; padding: 10px; text-align: center; font-size: 13px; border-bottom: 1px solid #ef9a9a; font-weight: bold; }
+        
+        .nav-links { margin-bottom: 10px; }
+        
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 10px;
+            color: #88aa88;
+            padding-bottom: 20px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .status-online { color: #2e7d32; }
+        .status-offline { color: #d32f2f; }
+
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-box {
+            background: #f0f8f0;
+            border: 1px solid #2e7d32;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .modal-box h3 { margin-top: 0; color: #1b5e20; }
+        .modal-input {
+            width: 100%;
+            padding: 5px;
+            margin: 10px 0;
+            border: 1px solid #81c784;
+        }
+        .modal-btn {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .modal-btn.close { background: #d32f2f; }
+
+        @media (max-width: 600px) {
+            .reply-container { min-width: 0; width: 100%; }
+            .post-image { max-width: 150px; }
+            .form-label { width: 70px; }
+            .container { padding: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div id="login-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Admin Access</h3>
+        <input type="password" id="admin-pass-input" class="modal-input" placeholder="Password">
+        <button id="modal-login-btn" class="modal-btn">Войти</button>
+        <button id="modal-close-btn" class="modal-btn close">Закрыть</button>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div id="board-nav">
+    [ 
+    <a href="#" onclick="window.app.switchBoard('b')">b</a> / 
+    <a href="#" onclick="window.app.switchBoard('a')">a</a> /
+    <a href="#" onclick="window.app.switchBoard('mu')">mu</a> /
+    <a href="#" onclick="window.app.switchBoard('vg')">vg</a> / 
+    <a href="#" onclick="window.app.switchBoard('gd')">gd</a> /
+    <a href="#" onclick="window.app.switchBoard('fit')">fit</a> /
+    <a href="#" onclick="window.app.switchBoard('po')">po</a> / 
+    <a href="#" onclick="window.app.switchBoard('s')">s</a> /
+    <a href="#" onclick="window.app.switchBoard('sci')">sci</a>
+    ]
+    <span style="float:right">
+        <span id="admin-indicator" class="admin-panel-indicator">ADMIN MODE</span>
+        [ <a href="#" onclick="window.app.setLanguage('ru')">RU</a> / <a href="#" onclick="window.app.setLanguage('en')">EN</a> ]
+    </span>
+</div>
+
+<div class="container">
+    <div id="config-warning" class="warning-bar" style="display:none;"></div>
+
+    <!-- Header -->
+    <div class="logo">
+        <span class="logo-img">🐸</span>
+        <h1 id="board-title">/b/ - Бред</h1>
+        <div class="subtitle" id="board-subtitle">Feels good man</div>
+    </div>
+
+    <!-- Creation Form -->
+    <div class="post-form-container">
+        <div id="form-type-label" style="text-align: center; font-weight: bold; margin-bottom: 5px; color: #1b5e20;">Новый тред</div>
+        
+        <div class="form-row">
+            <div class="form-label" id="lbl-name">Имя</div>
+            <input type="text" id="input-name" class="form-input" placeholder="Аноним">
+        </div>
+        <div class="form-row">
+            <div class="form-label" id="lbl-subject">Тема</div>
+            <input type="text" id="input-subject" class="form-input">
+            <button class="submit-btn" id="btn-submit" onclick="window.app.submitPost()">Отправить</button>
+        </div>
+        <div class="form-row">
+            <div class="form-label" id="lbl-comment">Текст</div>
+            <textarea id="input-comment" class="form-input"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-label" id="lbl-file">Картинка</div>
+            <div class="file-upload-wrapper">
+                <input type="text" id="input-file" class="form-input" placeholder="URL (https://...)" style="flex-grow:1;">
+                <span class="file-upload-or">или</span>
+                <input type="file" id="input-file-upload" accept="image/*" class="form-input" style="width: 180px;">
+            </div>
+        </div>
+    </div>
+    
+    <div class="nav-links" id="nav-links" style="display:none;">
+        <hr>
+        [ <a href="#" onclick="window.app.goCatalog()" id="link-catalog">Назад в каталог</a> ]
+        <hr>
+    </div>
+
+    <!-- Dynamic Content Area -->
+    <div id="main-content">
+        <div class="loading-msg" id="loading-text">Загрузка редких пепе...</div>
+    </div>
+
+    <footer>
+        <span id="status-display" class="status-indicator">Status: Connecting...</span>
+        PepeChan Engine v2.0 <span id="login-trigger-btn" class="admin-login-btn">[Login]</span>
+    </footer>
+
+</div>
+
+<!-- Firebase Logic -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- НАСТРОЙКИ FIREBASE (ДЛЯ ХОСТИНГА) ---
+    // ВСТАВЬТЕ СЮДА ДАННЫЕ ИЗ КОНСОЛИ FIREBASE
+    const manualConfig = {
+        apiKey: "AIzaSyD0drXAAP2LQSbHloYq2YUIaw4YS-mKv-Y",
+        authDomain: "pepechan-board.firebaseapp.com",
+        projectId: "pepechan-board",
+        storageBucket: "pepechan-board.firebasestorage.app",
+        messagingSenderId: "805918011698",
+        appId: "1:805918011698:web:2c8fa7ba6e76cf9648672b"
+    };
+    // ------------------------------------------
+
+    let app, auth, db, appId;
+    let useLocalStorage = false; 
+
+    // Update Status UI Helper
+    const updateStatus = (isOnline, msg) => {
+        const el = document.getElementById('status-display');
+        if (isOnline) {
+            el.textContent = "Status: Online";
+            el.className = "status-indicator status-online";
+        } else {
+            el.textContent = "Status: Offline (Local)" + (msg ? ` - ${msg}` : "");
+            el.className = "status-indicator status-offline";
+        }
+    };
+
+    try {
+        let configToUse;
+        
+        // 1. Используем переменную окружения (для Canvas/редактора)
+        if (typeof __firebase_config !== 'undefined') {
+             configToUse = JSON.parse(__firebase_config);
+             appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        } 
+        // 2. Иначе используем manualConfig (когда вы скачали файл)
+        else if (manualConfig.apiKey && manualConfig.apiKey.length > 5) {
+             configToUse = manualConfig;
+             appId = 'pepechan-public-v1'; 
+        } 
+        else {
+            throw new Error("Missing config");
+        }
+
+        app = initializeApp(configToUse);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+    } catch (e) {
+        console.warn("Firebase Config Error. Switching to Local Storage Mode.", e);
+        useLocalStorage = true;
+        updateStatus(false, "Config Missing");
+        
+        const warn = document.getElementById('config-warning');
+        warn.style.display = 'block';
+        if (e.message === "Missing config") {
+             warn.innerHTML = "<b>РЕЖИМ ОФЛАЙН (Local Storage).</b><br>Для работы онлайн: откройте этот файл в блокноте, найдите строку <code>const manualConfig</code> и вставьте туда настройки Firebase.";
+        } else {
+             warn.textContent = "Ошибка подключения к Firebase: " + e.message;
+        }
+    }
+
+    // --- Translations ---
+    const TRANSLATIONS = {
+        ru: {
+            nav_title: "PepeChan Online",
+            new_thread: "Новый тред",
+            reply_to: "Ответ в тред №",
+            name: "Имя",
+            subject: "Тема",
+            submit: "Отправить",
+            comment: "Текст",
+            image_url: "Картинка",
+            anon: "Аноним",
+            back_catalog: "Назад в каталог",
+            loading: "Загрузка редких пепе...",
+            empty_board: "Доска пуста. Саджем. Создайте первый тред!",
+            omitted: "Пропущено ответов",
+            click_reply: "Нажмите \"Ответ\" чтобы читать всё.",
+            thread_not_found: "Тред не найден (или удален).",
+            file: "Файл",
+            link: "Ссылка",
+            reply_btn: "Ответ",
+            error_conn: "Ошибка подключения к серверу",
+            error_load: "Ошибка загрузки данных",
+            wait_conn: "Подождите соединения с сервером...",
+            validation_err: "Введите текст или прикрепите изображение.",
+            error_send: "Ошибка отправки поста",
+            name_banned: "Это имя зарезервировано. Пожалуйста, используйте другое.",
+            admin_fail: "Неверный пароль.",
+            admin_success: "Режим бога включен.",
+            admin_logout: "Режим бога выключен.",
+            delete_confirm: "Удалить этот пост (и все ответы, если это тред)?",
+            board_b_desc: "Бред",
+            board_a_desc: "Аниме",
+            board_mu_desc: "Музыка",
+            board_gd_desc: "Дизайн",
+            board_fit_desc: "Фитнес",
+            board_vg_desc: "Видеоигры",
+            board_po_desc: "Политика",
+            board_s_desc: "Программы",
+            board_sci_desc: "Наука",
+            feels_good: "Feels good man"
+        },
+        en: {
+            nav_title: "PepeChan Online",
+            new_thread: "New Thread",
+            reply_to: "Reply to Thread #",
+            name: "Name",
+            subject: "Subject",
+            submit: "Submit",
+            comment: "Comment",
+            image_url: "Image",
+            anon: "Anonymous",
+            back_catalog: "Return to Catalog",
+            loading: "Loading rare pepes...",
+            empty_board: "Board is empty. Sadge. Create the first thread!",
+            omitted: "Replies omitted",
+            click_reply: "Click \"Reply\" to view.",
+            thread_not_found: "Thread not found (or deleted).",
+            file: "File",
+            link: "Link",
+            reply_btn: "Reply",
+            error_conn: "Connection error",
+            error_load: "Error loading data",
+            wait_conn: "Waiting for server connection...",
+            validation_err: "Please enter text or attach an image.",
+            error_send: "Error sending post",
+            name_banned: "This name is reserved. Please use another.",
+            admin_fail: "Wrong password.",
+            admin_success: "God mode enabled.",
+            admin_logout: "God mode disabled.",
+            delete_confirm: "Delete this post (and replies if thread)?",
+            board_b_desc: "Random",
+            board_a_desc: "Anime",
+            board_mu_desc: "Music",
+            board_gd_desc: "Graphic Design",
+            board_fit_desc: "Fitness",
+            board_vg_desc: "Video Games",
+            board_po_desc: "Politics",
+            board_s_desc: "Software",
+            board_sci_desc: "Science & Math",
+            feels_good: "Feels good man"
+        }
+    };
+
+    const BOARDS = {
+        'b': { name: 'Бред', descKey: 'board_b_desc' },
+        'a': { name: 'Anime', descKey: 'board_a_desc' },
+        'mu': { name: 'Music', descKey: 'board_mu_desc' },
+        'vg': { name: 'Video Games', descKey: 'board_vg_desc' },
+        'gd': { name: 'Graphic Design', descKey: 'board_gd_desc' },
+        'fit': { name: 'Fitness', descKey: 'board_fit_desc' },
+        'po': { name: 'Politach', descKey: 'board_po_desc' },
+        's': { name: 'Software', descKey: 'board_s_desc' },
+        'sci': { name: 'Science', descKey: 'board_sci_desc' }
+    };
+
+    const BANNED_NAMES = /^(admin|administrator|mod|moderator|root|moot|pepechan)$/i;
+    
+    // Прямой пароль для простоты (Direct Password)
+    const ADMIN_PASSWORD = "basedpepe";
+
+    class ImageboardApp {
+        constructor() {
+            this.currentBoard = 'b';
+            this.view = 'catalog';
+            this.currentThreadId = null;
+            this.user = null;
+            this.posts = []; 
+            this.loading = true;
+            this.isAdminMode = false;
+            
+            // Language Init
+            this.lang = localStorage.getItem('pepechan_lang') || 'ru';
+
+            // Bind Modal Events
+            this.setupModal();
+
+            if (!useLocalStorage && auth) {
+                this.initAuth();
+            } else {
+                // Local Storage Mode or Auth Init Fail Fallback
+                this.startListener();
+            }
+            this.updateInterface(); 
+        }
+        
+        setupModal() {
+            const modal = document.getElementById('login-modal');
+            const trigger = document.getElementById('login-trigger-btn');
+            const closeBtn = document.getElementById('modal-close-btn');
+            const loginBtn = document.getElementById('modal-login-btn');
+            const input = document.getElementById('admin-pass-input');
+
+            trigger.addEventListener('click', () => {
+                if (this.isAdminMode) {
+                    this.isAdminMode = false;
+                    alert(this.t('admin_logout'));
+                    this.updateInterface();
+                    this.render();
+                } else {
+                    modal.style.display = 'flex';
+                    input.value = '';
+                    input.focus();
+                }
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            const attemptLogin = () => {
+                // FORCE LOWERCASE + TRIM for better mobile/copy-paste support
+                const pass = input.value.trim().toLowerCase();
+                
+                console.log("Input:", pass); 
+                console.log("Target:", ADMIN_PASSWORD);
+
+                if (pass === ADMIN_PASSWORD) {
+                    this.isAdminMode = true;
+                    alert(this.t('admin_success'));
+                    this.updateInterface();
+                    this.render();
+                    modal.style.display = 'none';
+                } else {
+                    alert(this.t('admin_fail'));
+                }
+            };
+
+            loginBtn.addEventListener('click', attemptLogin);
+            
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') attemptLogin();
+            });
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+
+        t(key) {
+            return TRANSLATIONS[this.lang][key] || key;
+        }
+
+        setLanguage(lang) {
+            this.lang = lang;
+            localStorage.setItem('pepechan_lang', lang);
+            this.updateInterface();
+            this.render(); 
+        }
+
+        updateInterface() {
+            document.getElementById('lbl-name').textContent = this.t('name');
+            document.getElementById('lbl-subject').textContent = this.t('subject');
+            document.getElementById('lbl-comment').textContent = this.t('comment');
+            document.getElementById('lbl-file').textContent = this.t('image_url');
+            document.getElementById('btn-submit').textContent = this.t('submit');
+            document.getElementById('link-catalog').textContent = this.t('back_catalog');
+            document.getElementById('input-name').placeholder = this.isAdminMode ? "Admin" : this.t('anon');
+            document.querySelector('.logo .subtitle').textContent = this.t('feels_good');
+            
+            const indicator = document.getElementById('admin-indicator');
+            indicator.style.display = this.isAdminMode ? 'inline-block' : 'none';
+
+            const loginBtn = document.getElementById('login-trigger-btn');
+            loginBtn.textContent = this.isAdminMode ? "[Logout]" : "[Login]";
+
+            const bInfo = BOARDS[this.currentBoard];
+            document.getElementById('board-title').textContent = `/${this.currentBoard}/ - ${this.t(bInfo.descKey)}`;
+        }
+
+        async initAuth() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    this.user = user;
+                    this.startListener();
+                }
+            });
+
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                
+                // --- ОШИБКА АВТОРИЗАЦИИ ---
+                useLocalStorage = true;
+                updateStatus(false, "Auth Error");
+                const warn = document.getElementById('config-warning');
+                warn.style.display = 'block';
+                warn.innerHTML = `ОШИБКА ВХОДА: ${error.message}<br>
+                Проверьте консоль Firebase -> Authentication. Включите <b>Anonymous</b> sign-in.<br>
+                Сайт работает в офлайн режиме (посты не видны другим).`;
+                
+                this.startListener();
+            }
+        }
+
+        startListener() {
+            if (useLocalStorage) {
+                // LOCAL STORAGE MODE
+                this.posts = JSON.parse(localStorage.getItem('pepechan_posts_v2')) || [];
+                this.loading = false;
+                this.render();
+                return;
+            }
+
+            // FIREBASE MODE
+            if (!db) return;
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts'));
+            
+            onSnapshot(q, (snapshot) => {
+                const newPosts = [];
+                snapshot.forEach((doc) => {
+                    newPosts.push({ _docId: doc.id, ...doc.data() });
+                });
+                this.posts = newPosts;
+                this.loading = false;
+                updateStatus(true); // Success!
+                this.render();
+            }, (error) => {
+                console.error("Data Error:", error);
+                
+                // --- ОШИБКА ДОСТУПА К ДАННЫМ ---
+                useLocalStorage = true; 
+                updateStatus(false, "Database Error");
+                const warn = document.getElementById('config-warning');
+                warn.style.display = 'block';
+                warn.innerHTML = `ОШИБКА БАЗЫ ДАННЫХ: ${error.code} (${error.message})<br>
+                Проверьте консоль Firebase -> Firestore Database -> <b>Rules</b>.<br>
+                Разрешите чтение/запись (allow read, write: if true;).<br>
+                Переход в офлайн режим.`;
+
+                this.startListener();
+            });
+        }
+
+        async deletePost(docId, postId, parentId) {
+            if (!confirm(this.t('delete_confirm'))) return;
+
+            if (useLocalStorage) {
+                // Local delete
+                if (parentId === 0) {
+                    // Delete thread + replies
+                    this.posts = this.posts.filter(p => p.id !== postId && p.parentId !== postId);
+                } else {
+                    // Delete single post
+                    this.posts = this.posts.filter(p => p.id !== postId);
+                }
+                localStorage.setItem('pepechan_posts_v2', JSON.stringify(this.posts));
+                this.render();
+                
+                if (this.view === 'thread' && this.currentThreadId === postId) {
+                    this.goCatalog();
+                }
+                return;
+            }
+
+            // Firebase delete
+            if (!db) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts', docId));
+
+                if (parentId === 0) {
+                    const q = query(
+                        collection(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts'),
+                        where("parentId", "==", postId)
+                    );
+                    const snapshot = await getDocs(q);
+                    snapshot.forEach(async (d) => {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts', d.id));
+                    });
+                }
+                
+                if (this.view === 'thread' && this.currentThreadId === postId) {
+                    this.goCatalog();
+                }
+
+            } catch (e) {
+                console.error("Delete error:", e);
+                alert("Error deleting");
+            }
+        }
+
+        switchBoard(boardCode) {
+            this.currentBoard = boardCode;
+            this.view = 'catalog';
+            this.currentThreadId = null;
+            this.updateInterface();
+            this.render();
+        }
+
+        goCatalog() {
+            this.view = 'catalog';
+            this.currentThreadId = null;
+            this.render();
+        }
+
+        viewThread(threadId) {
+            this.view = 'thread';
+            this.currentThreadId = threadId;
+            this.render();
+        }
+
+        // Helper to resize images to fit under Firestore limit (approx 900kb safe limit)
+        compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Resize large images
+                        const scaleSize = MAX_WIDTH / img.width;
+                        if (scaleSize < 1) {
+                            canvas.width = MAX_WIDTH;
+                            canvas.height = img.height * scaleSize;
+                        } else {
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                        }
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // Convert to base64 jpeg with quality reduction
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); 
+                    };
+                    img.onerror = (err) => reject(err);
+                };
+                reader.onerror = (err) => reject(err);
+            });
+        }
+
+        async submitPost() {
+            if (!useLocalStorage && !this.user) {
+                alert(this.t('wait_conn'));
+                return;
+            }
+
+            const nameIn = document.getElementById('input-name');
+            const subIn = document.getElementById('input-subject');
+            const comIn = document.getElementById('input-comment');
+            const fileIn = document.getElementById('input-file');
+            const fileUpload = document.getElementById('input-file-upload');
+
+            let name = nameIn.value.trim();
+            const subject = subIn.value.trim();
+            const comment = comIn.value.trim();
+            let file = fileIn.value.trim(); // URL input
+
+            // Handle File Upload (Override URL if file selected)
+            if (fileUpload.files && fileUpload.files[0]) {
+                try {
+                    const uploadedFile = fileUpload.files[0];
+                    if (uploadedFile.size > 2 * 1024 * 1024) {
+                       if(!confirm("Файл больше 2МБ и будет сильно сжат. Продолжить?")) return;
+                    }
+                    file = await this.compressImage(uploadedFile);
+                } catch (e) {
+                    console.error("Image processing error", e);
+                    alert("Ошибка обработки изображения");
+                    return;
+                }
+            }
+
+            if (!comment && !file) {
+                alert(this.t('validation_err'));
+                return;
+            }
+
+            if (!this.isAdminMode && BANNED_NAMES.test(name)) {
+                alert(this.t('name_banned'));
+                return;
+            }
+
+            // Admin Name Logic
+            if (!name) {
+                name = this.isAdminMode ? "Admin" : this.t('anon');
+            }
+
+            const isAdm = this.isAdminMode;
+            const postId = Date.now();
+            const newPost = {
+                id: postId,
+                board: this.currentBoard,
+                parentId: this.view === 'catalog' ? 0 : this.currentThreadId,
+                name: name,
+                subject: subject,
+                comment: comment,
+                file: file,
+                date: new Date().toLocaleString(this.lang === 'ru' ? 'ru-RU' : 'en-US'),
+                authorUid: useLocalStorage ? 'local-user' : this.user.uid,
+                isAdmin: isAdm 
+            };
+
+            if (useLocalStorage) {
+                this.posts.push(newPost);
+                localStorage.setItem('pepechan_posts_v2', JSON.stringify(this.posts));
+                
+                this.resetForm(subIn, comIn, fileIn, fileUpload);
+                
+                if (this.view === 'catalog') {
+                    this.view = 'thread';
+                    this.currentThreadId = postId;
+                }
+                
+                this.render(); 
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts'), newPost);
+                
+                this.resetForm(subIn, comIn, fileIn, fileUpload);
+                
+                if (this.view === 'catalog') {
+                    this.view = 'thread';
+                    this.currentThreadId = postId;
+                }
+            } catch (e) {
+                console.error("Error adding post: ", e);
+                if (e.code === 'resource-exhausted') {
+                    alert("Ошибка: Файл слишком большой для базы данных (лимит 1МБ). Попробуйте файл поменьше или URL.");
+                } else {
+                    alert(this.t('error_send') + ": " + e.message);
+                }
+            }
+        }
+
+        resetForm(subIn, comIn, fileIn, fileUpload) {
+            subIn.value = '';
+            comIn.value = '';
+            fileIn.value = '';
+            fileUpload.value = ''; // Reset file input
+        }
+
+        processText(text) {
+            if (!text) return '';
+            let safeText = text.replace(/&/g, "&amp;")
+                               .replace(/</g, "&lt;")
+                               .replace(/>/g, "&gt;");
+            
+            const lines = safeText.split('\n');
+            const processedLines = lines.map(line => {
+                if (line.startsWith('&gt;')) {
+                    return `<span class="greentext">${line}</span>`;
+                }
+                return line;
+            });
+            return processedLines.join('<br>');
+        }
+
+        toggleImage(img) {
+            img.classList.toggle('expanded');
+        }
+
+        insertId(id) {
+            const textarea = document.getElementById('input-comment');
+            textarea.value += `>>${id}\n`;
+            textarea.focus();
+        }
+
+        render() {
+            const formLabel = document.getElementById('form-type-label');
+            const navLinks = document.getElementById('nav-links');
+            const container = document.getElementById('main-content');
+
+            if (this.loading) {
+                container.innerHTML = `<div class="loading-msg">${this.t('loading')}</div>`;
+                return;
+            }
+            
+            if (this.view === 'catalog') {
+                formLabel.textContent = this.t('new_thread');
+                navLinks.style.display = 'none';
+            } else {
+                formLabel.textContent = `${this.t('reply_to')}${this.currentThreadId}`;
+                navLinks.style.display = 'block';
+            }
+
+            container.innerHTML = '';
+
+            const boardPosts = this.posts
+                .filter(p => p.board === this.currentBoard)
+                .sort((a, b) => a.id - b.id);
+            
+            if (this.view === 'catalog') {
+                const threads = boardPosts.filter(p => p.parentId === 0).reverse();
+                
+                if (threads.length === 0) {
+                    container.innerHTML = `<div class="error-msg">${this.t('empty_board')}</div>`;
+                    return;
+                }
+
+                threads.forEach(op => {
+                    const replies = boardPosts.filter(p => p.parentId === op.id);
+                    const previewReplies = replies.slice(-3);
+                    const omitted = replies.length - previewReplies.length;
+
+                    const threadDiv = document.createElement('div');
+                    threadDiv.className = 'thread';
+                    
+                    let html = this.renderPostHTML(op, true, true);
+                    
+                    if (omitted > 0) {
+                        html += `<div style="color:#557755; margin-left: 20px; font-style: italic;">${this.t('omitted')}: ${omitted}. ${this.t('click_reply')}</div>`;
+                    }
+
+                    previewReplies.forEach(rep => {
+                        html += this.renderPostHTML(rep, false, false);
+                    });
+
+                    threadDiv.innerHTML = html;
+                    container.appendChild(threadDiv);
+                });
+
+            } else {
+                const op = boardPosts.find(p => p.id === this.currentThreadId);
+                if (!op) {
+                    container.innerHTML = `<div class="error-msg">${this.t('thread_not_found')}</div>`;
+                    return;
+                }
+
+                const replies = boardPosts.filter(p => p.parentId === this.currentThreadId);
+                
+                const threadDiv = document.createElement('div');
+                threadDiv.className = 'thread';
+                
+                let html = this.renderPostHTML(op, true, false);
+                replies.forEach(rep => {
+                    html += this.renderPostHTML(rep, false, false);
+                });
+
+                threadDiv.innerHTML = html;
+                container.appendChild(threadDiv);
+            }
+        }
+
+        renderPostHTML(post, isOp, isCatalog) {
+            const formattedText = this.processText(post.comment);
+            
+            let imageHtml = '';
+            if (post.file) {
+                const isBase64 = post.file.startsWith('data:image');
+                // Link setup
+                const hrefLink = isBase64 ? '#' : post.file;
+                // Add noopener noreferrer for security and no-referrer for hotlinking privacy
+                const linkAttr = isBase64 ? `onclick="window.app.toggleImage(this.parentElement.nextElementSibling); return false;"` : `target="_blank" rel="noopener noreferrer"`;
+                const linkText = isBase64 ? '(Картинка)' : this.t('link');
+
+                // Image setup with improvements:
+                // 1. referrerpolicy="no-referrer" to bypass some hotlink protections
+                // 2. onerror sets a visible placeholder "Error" instead of hiding
+                imageHtml = `
+                    <div class="file-info">
+                        ${this.t('file')}: <a href="${hrefLink}" ${linkAttr}>${linkText}</a>
+                    </div>
+                    <img src="${post.file}" 
+                         class="post-image" 
+                         referrerpolicy="no-referrer"
+                         onclick="window.app.toggleImage(this)" 
+                         onerror="this.onerror=null; this.src='https://placehold.co/200?text=Error'; this.alt='Image Load Error'; this.style.border='1px solid red';">
+                `;
+            }
+
+            const nameClass = post.isAdmin ? "name admin-capcode" : "name";
+            let nameDisplay = post.name;
+            
+            // Translate Anonymous if it matches default values
+            if (!post.isAdmin && (nameDisplay === 'Аноним' || nameDisplay === 'Anonymous')) {
+                nameDisplay = this.t('anon');
+            }
+            
+            if (post.isAdmin) {
+                if (nameDisplay === 'Admin') {
+                    nameDisplay = "# Admin #";
+                } else {
+                    nameDisplay = `${nameDisplay} ## Admin`;
+                }
+            }
+
+            let deleteBtn = '';
+            if (this.isAdminMode) {
+                // For local posts, pass docId as null or postId, handled in deletePost
+                deleteBtn = `<span class="delete-btn" onclick="window.app.deletePost('${post._docId || ''}', ${post.id}, ${post.parentId})">[x]</span>`;
+            }
+
+            const headerHtml = `
+                <span class="subject">${post.subject || ''}</span> 
+                <span class="${nameClass}">${nameDisplay}</span> 
+                <span class="date">${post.date}</span>
+                <span class="post-number">No.</span><span class="id" onclick="window.app.insertId(${post.id})">${post.id}</span>
+                ${deleteBtn}
+                ${isOp && isCatalog ? `[<a href="#" onclick="window.app.viewThread(${post.id}); return false;">${this.t('reply_btn')}</a>]` : ''}
+            `;
+
+            if (isOp) {
+                return `
+                    <div class="post op-post" id="post-${post.id}">
+                        ${imageHtml}
+                        <div class="post-header">${headerHtml}</div>
+                        <div class="post-message">${formattedText}</div>
+                    </div>
+                    <div style="clear:both"></div>
+                `;
+            } else {
+                return `
+                    <div class="reply-container" id="post-${post.id}">
+                        <div class="post-header">${headerHtml}</div>
+                        ${imageHtml}
+                        <div class="post-message">${formattedText}</div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    window.app = new ImageboardApp();
+</script>
+</body>
+</html>
