@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeChan - Имиджборд (Admin Update)</title>
+    <title>PepeChan</title>
     <style>
         /* --- CSS Reset & Basics --- */
         * { box-sizing: border-box; }
@@ -54,7 +54,7 @@
             font-size: 40px;
             display: inline-block;
             margin-bottom: 5px;
-            cursor: help; /* Hint for interaction */
+            cursor: help;
             user-select: none;
         }
         .logo-img:active { transform: scale(0.9); }
@@ -69,7 +69,7 @@
             border: 1px dashed #d32f2f;
             background: #fff0f0;
             max-width: 800px;
-            display: none; /* Hidden if empty */
+            display: none;
         }
         .announcement-edit-btn {
             font-size: 10px;
@@ -125,7 +125,6 @@
         }
         .file-upload-or { margin: 0 5px; font-size: 10px; color: #555; }
 
-        /* Admin Controls in Form */
         #admin-posting-options {
             background: #ffe0b2;
             padding: 3px;
@@ -139,16 +138,15 @@
         .thread { margin-bottom: 40px; border-bottom: 1px solid #aaccaa; padding-bottom: 20px; clear: both;}
         
         .post {
-            overflow: hidden;
+            /* Исправлено: overflow visible, чтобы панель реакций могла "вылезать" за пределы */
+            overflow: visible; 
             margin-bottom: 4px;
+            /* flow-root заменяет старый clearfix, заставляя блок растягиваться под float элементы */
+            display: flow-root; 
         }
         
-        /* OP Post Style */
-        .op-post {
-            display: block;
-        }
+        .op-post { display: block; }
 
-        /* Reply Style */
         .reply-container {
             display: table;
             background-color: #e0f2e0;
@@ -158,6 +156,8 @@
             min-width: 400px;
             max-width: 100%;
             border-radius: 2px;
+            /* Для ответов display: table сам справляется с overflow, но убедимся */
+            overflow: visible;
         }
 
         .post-header {
@@ -172,15 +172,10 @@
         .id { color: #446644; cursor: pointer;}
         .post-number { color: #446644; cursor: pointer; }
         
-        /* Special Post States */
         .pinned-icon { color: #d32f2f; font-weight: bold; margin-right: 5px; }
         .locked-icon { color: #d32f2f; font-weight: bold; margin-right: 5px; }
         
-        /* Admin Styles */
-        .admin-capcode {
-            color: #ff0000 !important;
-            font-weight: bold;
-        }
+        .admin-capcode { color: #ff0000 !important; font-weight: bold; }
         .admin-btn {
             cursor: pointer;
             font-weight: bold;
@@ -211,6 +206,66 @@
             margin-left: 5px;
             border-radius: 3px;
         }
+
+        /* --- Reactions Styles --- */
+        .reactions-container {
+            margin-top: 5px;
+            font-size: 12px;
+            user-select: none;
+            position: relative;
+            clear: both; /* Чтобы реакции всегда были под текстом и картинкой */
+        }
+        .reaction-tag {
+            cursor: pointer;
+            border: 1px solid #b2dfdb;
+            background: #f1f8e9;
+            padding: 1px 4px;
+            margin-right: 4px;
+            border-radius: 3px;
+            display: inline-block;
+            color: #555;
+            margin-bottom: 2px;
+        }
+        .reaction-tag:hover { background: #dcedc8; }
+        .reaction-tag.user-selected {
+            background: #a5d6a7;
+            border-color: #2e7d32;
+            color: #1b5e20;
+            font-weight: bold;
+        }
+        .reaction-add-btn {
+            cursor: pointer;
+            color: #888;
+            font-weight: bold;
+            font-size: 10px;
+            padding: 1px 4px;
+            border: 1px dashed #ccc;
+            border-radius: 3px;
+            display: inline-block;
+        }
+        .reaction-add-btn:hover { background: #eee; color: #333; }
+        
+        .reaction-picker {
+            display: none;
+            position: absolute;
+            top: 20px; /* Сдвиг вниз */
+            left: 0;
+            background: white;
+            border: 1px solid #888;
+            padding: 5px;
+            border-radius: 4px;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+            z-index: 9999; /* Чтобы точно было поверх всего */
+            white-space: nowrap;
+        }
+        .reaction-picker span {
+            font-size: 18px;
+            cursor: pointer;
+            padding: 2px 5px;
+            transition: transform 0.1s;
+            display: inline-block;
+        }
+        .reaction-picker span:hover { transform: scale(1.3); background-color: #eee; border-radius: 4px;}
 
         .file-info {
             font-size: 11px;
@@ -281,6 +336,7 @@
             text-align: center;
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
+        .modal-box h3 { margin-top: 0; color: #1b5e20; }
         .modal-input { width: 100%; padding: 5px; margin: 10px 0; border: 1px solid #81c784; }
         .modal-btn { background: #2e7d32; color: white; border: none; padding: 5px 15px; cursor: pointer; margin: 5px; }
         .modal-btn.close { background: #d32f2f; }
@@ -390,7 +446,7 @@
 
     <footer>
         <span id="status-display" class="status-indicator">Status: Connecting...</span>
-        PepeChan Engine v2.5
+        PepeChan Engine v3.1.1
     </footer>
 
 </div>
@@ -399,7 +455,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, deleteDoc, updateDoc, setDoc, doc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, updateDoc, setDoc, doc, onSnapshot, query, where, getDocs, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- НАСТРОЙКИ FIREBASE (ДЛЯ ХОСТИНГА) ---
     const manualConfig = {
@@ -416,8 +472,8 @@
     let useLocalStorage = false; 
 
     // Hash Password (SHA-256)
-    // basedpepe -> d36440c9504812f8646b40285223c2d46e33620023641773091217088d305615
     const ADMIN_HASH = "d36440c9504812f8646b40285223c2d46e33620023641773091217088d305615";
+    const REACTION_TYPES = ['👍', '👎', '❤️', '🤣', '😭', '🤡', '💩', '🔥'];
 
     const updateStatus = (isOnline, msg) => {
         const el = document.getElementById('status-display');
@@ -486,6 +542,13 @@
             this.setupModal();
             this.setupLogoTrigger();
 
+            // Click listener to close reaction pickers when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.reactions-container')) {
+                    document.querySelectorAll('.reaction-picker').forEach(el => el.style.display = 'none');
+                }
+            });
+
             if (!useLocalStorage && auth) {
                 this.initAuth();
             } else {
@@ -509,7 +572,6 @@
                     this.logoClicks = 0;
                     this.openLoginModal();
                 }
-                // Reset counter if idle
                 clearTimeout(this.clickTimer);
                 this.clickTimer = setTimeout(() => { this.logoClicks = 0; }, 2000);
             });
@@ -538,7 +600,7 @@
             closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
 
             const attemptLogin = async () => {
-                const pass = input.value.trim().toLowerCase(); // Normalize
+                const pass = input.value.trim().toLowerCase(); 
                 try {
                     const inputHash = await this.sha256(pass);
                     if (inputHash === ADMIN_HASH) {
@@ -632,7 +694,6 @@
                 const newPosts = [];
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Handle Announcement Doc Separately
                     if (doc.id === 'ANNOUNCEMENT') {
                         this.announcement = data.text || "";
                         this.renderAnnouncement();
@@ -661,7 +722,7 @@
                 div.style.display = 'block';
                 text.textContent = this.announcement;
             } else {
-                div.style.display = this.isAdminMode ? 'block' : 'none'; // Admin sees empty box to edit
+                div.style.display = this.isAdminMode ? 'block' : 'none'; 
                 text.textContent = this.isAdminMode ? "[Нет объявлений]" : "";
             }
         }
@@ -683,9 +744,7 @@
         }
 
         async updatePostStatus(docId, postId, action) {
-            // Actions: 'pin', 'lock'
             if (!db) return;
-            // Find post
             const post = this.posts.find(p => p.id === postId);
             if (!post) return;
             
@@ -693,10 +752,93 @@
                 const updates = {};
                 if (action === 'pin') updates.isPinned = !post.isPinned;
                 if (action === 'lock') updates.isLocked = !post.isLocked;
-                
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts', docId), updates);
             } catch(e) {
                 alert("Error updating post: " + e.message);
+            }
+        }
+
+        toggleReactionPicker(postId) {
+            const picker = document.getElementById(`picker-${postId}`);
+            if (picker.style.display === 'block') {
+                picker.style.display = 'none';
+            } else {
+                // Hide all other pickers
+                document.querySelectorAll('.reaction-picker').forEach(el => el.style.display = 'none');
+                picker.style.display = 'block';
+            }
+        }
+
+        async toggleReaction(docId, postId, emoji) {
+            if (!this.user && !useLocalStorage) return;
+            
+            const post = this.posts.find(p => p.id === postId);
+            if (!post) return;
+
+            const uid = useLocalStorage ? 'local-user' : this.user.uid;
+            
+            // Hide picker
+            const picker = document.getElementById(`picker-${postId}`);
+            if (picker) picker.style.display = 'none';
+
+            // Find current active reaction for user
+            let currentReactionEmoji = null;
+            if (post.reactions) {
+                for (const [r, users] of Object.entries(post.reactions)) {
+                    if (users.includes(uid)) {
+                        currentReactionEmoji = r;
+                        break;
+                    }
+                }
+            }
+
+            if (useLocalStorage) {
+                if (!post.reactions) post.reactions = {};
+                if (currentReactionEmoji) {
+                    // Remove current
+                    const idx = post.reactions[currentReactionEmoji].indexOf(uid);
+                    if (idx > -1) post.reactions[currentReactionEmoji].splice(idx, 1);
+                }
+                
+                // If it wasn't the same one, add new one
+                if (currentReactionEmoji !== emoji) {
+                    if (!post.reactions[emoji]) post.reactions[emoji] = [];
+                    post.reactions[emoji].push(uid);
+                }
+                
+                localStorage.setItem('pepechan_posts_v2', JSON.stringify(this.posts));
+                this.render();
+                return;
+            }
+
+            // Firebase Logic with Swap
+            const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'nanochan_posts', docId);
+            const updates = {};
+
+            // If user already has a reaction
+            if (currentReactionEmoji) {
+                // If clicking same, remove it (toggle off)
+                if (currentReactionEmoji === emoji) {
+                    updates[`reactions.${currentReactionEmoji}`] = arrayRemove(uid);
+                } else {
+                    // If clicking different, remove old AND add new (Swap)
+                    updates[`reactions.${currentReactionEmoji}`] = arrayRemove(uid);
+                    updates[`reactions.${emoji}`] = arrayUnion(uid);
+                }
+            } else {
+                // No reaction yet, add new
+                updates[`reactions.${emoji}`] = arrayUnion(uid);
+            }
+
+            try {
+                await updateDoc(postRef, updates);
+            } catch(e) {
+                // Init if needed
+                if (e.code === 'not-found' || e.message.includes('map')) {
+                     await setDoc(postRef, { reactions: { [emoji]: [uid] } }, { merge: true });
+                } else {
+                    console.error("Reaction error:", e);
+                }
             }
         }
 
@@ -774,11 +916,9 @@
             if (!comment && !file) { alert(this.t('validation_err')); return; }
             if (!this.isAdminMode && BANNED_NAMES.test(name)) { alert(this.t('name_banned')); return; }
 
-            // Admin Logic
             const postAsAdmin = this.isAdminMode && adminCheck && adminCheck.checked;
             if (!name) name = postAsAdmin ? "Admin" : this.t('anon');
 
-            // IP Fetch
             let userIp = "Hidden";
             if (!useLocalStorage) {
                 try {
@@ -802,7 +942,8 @@
                 isAdmin: postAsAdmin,
                 ip: userIp,
                 isPinned: false,
-                isLocked: false
+                isLocked: false,
+                reactions: {} 
             };
 
             if (useLocalStorage) {
@@ -846,7 +987,6 @@
 
             if (this.loading) { container.innerHTML = `<div class="loading-msg">${this.t('loading')}</div>`; return; }
             
-            // Check Locked State
             let currentThread = null;
             if (this.view === 'thread') currentThread = this.posts.find(p => p.id === this.currentThreadId);
             
@@ -857,7 +997,6 @@
             } else {
                 document.getElementById('form-type-label').textContent = `${this.t('reply_to')}${this.currentThreadId}`;
                 document.getElementById('nav-links').style.display = 'block';
-                // Hide form if locked
                 if (currentThread && currentThread.isLocked) {
                     formContainer.style.display = 'none';
                     container.innerHTML = `<div style="text-align:center; color:red; font-weight:bold; margin-bottom:10px;">🔒 ${this.t('thread_locked')}</div>`;
@@ -870,7 +1009,6 @@
             const boardPosts = this.posts.filter(p => p.board === this.currentBoard);
             
             if (this.view === 'catalog') {
-                // Sort: Pinned first, then by ID desc
                 const threads = boardPosts.filter(p => p.parentId === 0).sort((a, b) => {
                     if (a.isPinned && !b.isPinned) return -1;
                     if (!a.isPinned && b.isPinned) return 1;
@@ -893,7 +1031,7 @@
 
             } else {
                 if (!currentThread) { container.innerHTML = `<div class="error-msg">${this.t('thread_not_found')}</div>`; return; }
-                const replies = boardPosts.filter(p => p.parentId === this.currentThreadId); // Sorted by ID asc naturally by Firebase fetch order usually, or we sort
+                const replies = boardPosts.filter(p => p.parentId === this.currentThreadId); 
                 replies.sort((a,b) => a.id - b.id);
                 
                 const threadDiv = document.createElement('div');
@@ -921,7 +1059,6 @@
                 `;
             }
 
-            // Name Logic
             let nameDisplay = post.name;
             const nameClass = post.isAdmin ? "name admin-capcode" : "name";
             if (!post.isAdmin && (nameDisplay === 'Аноним' || nameDisplay === 'Anonymous')) nameDisplay = this.t('anon');
@@ -930,23 +1067,19 @@
                 else nameDisplay = `${nameDisplay} ## Admin`;
             }
 
-            // Status Icons
             let icons = "";
             if (isOp) {
                 if (post.isPinned) icons += `<span class="pinned-icon">📌</span>`;
                 if (post.isLocked) icons += `<span class="locked-icon">🔒</span>`;
             }
 
-            // Admin Controls
             let adminControls = '';
             if (this.isAdminMode) {
-                // Meta Info (IDs)
                 if (this.showAdminMeta) {
                     const color = this.stringToColor(post.authorUid);
                     adminControls += `<span class="admin-meta-info" style="background:${color}">UID: ${post.authorUid.slice(0,5)}..</span>`;
                     adminControls += `<span class="admin-meta-info">IP: ${post.ip || '?'}</span>`;
                 }
-                // Buttons
                 const docId = post._docId || '';
                 if (isOp && docId) {
                     adminControls += `<span class="admin-btn btn-pin" onclick="window.app.updatePostStatus('${docId}', ${post.id}, 'pin')">[Pin]</span>`;
@@ -956,6 +1089,37 @@
                     adminControls += `<span class="admin-btn btn-del" onclick="window.app.deletePost('${docId}', ${post.id}, ${post.parentId})">[Del]</span>`;
                 }
             }
+
+            // --- Reactions Generation v2 (Collapsible) ---
+            const myUid = useLocalStorage ? 'local-user' : (this.user ? this.user.uid : null);
+            const postReactions = post.reactions || {};
+            
+            let reactionsDisplay = '';
+            REACTION_TYPES.forEach(emoji => {
+                const users = postReactions[emoji] || [];
+                const count = users.length;
+                if (count > 0) {
+                    const isActive = myUid && users.includes(myUid);
+                    const activeClass = isActive ? 'user-selected' : '';
+                    reactionsDisplay += `<span class="reaction-tag ${activeClass}" onclick="window.app.toggleReaction('${post._docId}', ${post.id}, '${emoji}')">${emoji} ${count}</span>`;
+                }
+            });
+
+            // Picker Generation
+            let pickerHtml = `<div class="reaction-picker" id="picker-${post.id}">`;
+            REACTION_TYPES.forEach(emoji => {
+                pickerHtml += `<span onclick="window.app.toggleReaction('${post._docId}', ${post.id}, '${emoji}')">${emoji}</span>`;
+            });
+            pickerHtml += `</div>`;
+
+            // Combine
+            let reactionsHtml = `
+                <div class="reactions-container">
+                    ${reactionsDisplay}
+                    <span class="reaction-add-btn" onclick="window.app.toggleReactionPicker('${post.id}')">[+]</span>
+                    ${pickerHtml}
+                </div>
+            `;
 
             const headerHtml = `
                 ${icons} <span class="subject">${post.subject || ''}</span> 
@@ -967,9 +1131,9 @@
             `;
 
             if (isOp) {
-                return `<div class="post op-post" id="post-${post.id}">${imageHtml}<div class="post-header">${headerHtml}</div><div class="post-message">${formattedText}</div></div><div style="clear:both"></div>`;
+                return `<div class="post op-post" id="post-${post.id}">${imageHtml}<div class="post-header">${headerHtml}</div><div class="post-message">${formattedText}</div>${reactionsHtml}</div><div style="clear:both"></div>`;
             } else {
-                return `<div class="reply-container" id="post-${post.id}"><div class="post-header">${headerHtml}</div>${imageHtml}<div class="post-message">${formattedText}</div></div>`;
+                return `<div class="reply-container" id="post-${post.id}"><div class="post-header">${headerHtml}</div>${imageHtml}<div class="post-message">${formattedText}</div>${reactionsHtml}</div>`;
             }
         }
     }
