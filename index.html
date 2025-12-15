@@ -63,7 +63,6 @@
             <div class="form-row">
                 <div class="form-label">Subject</div>
                 <input type="text" id="input-subject" class="form-input">
-                <button class="submit-btn" onclick="window.app.submitPost()">Submit</button>
             </div>
             
             <div class="form-row">
@@ -78,6 +77,11 @@
                     <span class="separator">or</span>
                     <input type="file" id="input-file-upload" accept="image/*" class="form-input" style="width:180px">
                 </div>
+            </div>
+
+            <!-- Submit Button moved to bottom center -->
+            <div class="form-row" style="justify-content: center; margin-top: 10px;">
+                <button class="submit-btn" onclick="window.app.submitPost()">Submit</button>
             </div>
         </div>
 
