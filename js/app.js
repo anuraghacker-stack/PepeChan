@@ -14,37 +14,25 @@ const STATE = {
     showAdminMeta: false,
     user: null,
     posts: [],
-    unsubscribe: null,
-    announcement: "" // Храним текст объявления
+    unsubscribePosts: null,    // Слушатель постов
+    unsubscribeAnnounce: null, // Слушатель объявлений
+    announcement: ""
 };
 
-// Пароль админа
 const ADMIN_PASS = "basedpepe"; 
 
-// СПИСОК ДОСОК (Для отображения названий)
 const BOARDS = {
-    'b': 'Random',
-    'a': 'Anime & Manga',
-    'v': 'Video Games',
-    'vg': 'Video Game Generals',
-    'mu': 'Music',
-    'tv': 'Television & Film',
-    'g': 'Technology',
-    'gd': 'Graphic Design',
-    'diy': 'Do It Yourself',
-    'fit': 'Fitness',
-    'sci': 'Science & Math',
-    'his': 'History',
-    'int': 'International',
-    'po': 'Politach',
-    's': 'Software'
+    'b': 'Random', 'a': 'Anime & Manga', 'v': 'Video Games', 'vg': 'Video Game Generals',
+    'mu': 'Music', 'tv': 'Television & Film', 'g': 'Technology', 'gd': 'Graphic Design',
+    'diy': 'Do It Yourself', 'fit': 'Fitness', 'sci': 'Science & Math', 'his': 'History',
+    'int': 'International', 'po': 'Politach', 's': 'Software'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
     setupEventListeners();
     
-    // Глобальный клик для закрытия пикеров
+    // Закрытие пикеров реакций при клике вне
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.reactions-container')) {
             document.querySelectorAll('.reaction-picker').forEach(el => el.style.display = 'none');
@@ -71,7 +59,7 @@ function initAuth() {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             STATE.user = user;
-            startListener();
+            startListeners();
         } else {
             signInAnonymously(auth).catch(e => {
                 console.error("Auth fail", e);
@@ -86,39 +74,65 @@ function initAuth() {
     });
 }
 
-// --- Data Listener ---
-function startListener() {
-    // Prevent duplicate listeners
-    if (STATE.unsubscribe) {
-        STATE.unsubscribe();
-        STATE.unsubscribe = null;
-    }
+// --- Data Listeners ---
+function startListeners() {
+    // 1. Слушатель ПОСТОВ
+    if (STATE.unsubscribePosts) STATE.unsubscribePosts();
 
     const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'posts'));
     
-    STATE.unsubscribe = onSnapshot(q, (snapshot) => {
+    STATE.unsubscribePosts = onSnapshot(q, (snapshot) => {
         const newPosts = [];
         snapshot.forEach(doc => {
-            // Обработка специального документа с объявлением
-            if (doc.id === 'ANNOUNCEMENT') {
-                STATE.announcement = doc.data().text || "";
-                renderAnnouncement(STATE.announcement);
-            } else {
+            // Игнорируем документ с объявлением в массиве постов
+            if (doc.id !== 'ANNOUNCEMENT') {
                 newPosts.push({ _docId: doc.id, ...doc.data() });
             }
         });
         STATE.posts = newPosts;
         updateStatus(true);
-        render();
+        render(); // Перерисовываем контент
     }, (err) => {
-        console.error("DB Error", err);
+        console.error("Posts DB Error", err);
         updateStatus(false, "DB Error");
-        const warn = document.getElementById('config-warning');
-        if (warn) {
-            warn.innerHTML = "Ошибка базы данных. Проверьте Rules в консоли Firebase.";
-            warn.style.display = 'block';
-        }
     });
+
+    // 2. Слушатель ОБЪЯВЛЕНИЙ (Отдельно)
+    if (STATE.unsubscribeAnnounce) STATE.unsubscribeAnnounce();
+    
+    const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', 'ANNOUNCEMENT');
+    
+    STATE.unsubscribeAnnounce = onSnapshot(announceRef, (docSnap) => {
+        if (docSnap.exists()) {
+            STATE.announcement = docSnap.data().text || "";
+        } else {
+            STATE.announcement = "";
+        }
+        renderAnnouncement(STATE.announcement); // Перерисовываем только шапку
+    }, (err) => {
+        console.warn("Announce DB Error (Ignore if not exists)", err);
+    });
+}
+
+function renderAnnouncement(text) {
+    const el = document.getElementById('global-announcement');
+    const txt = document.getElementById('announcement-text');
+    const editBtn = document.getElementById('announcement-edit');
+    
+    // Текст
+    txt.textContent = text || (STATE.isAdmin ? "[Нет объявлений]" : "");
+
+    // Видимость
+    if (text) {
+        el.classList.remove('hidden');
+    } else {
+        if (STATE.isAdmin) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    }
+    
+    // Кнопка
+    if (STATE.isAdmin) editBtn.classList.remove('hidden');
+    else editBtn.classList.add('hidden');
 }
 
 // --- Render Logic ---
@@ -127,38 +141,38 @@ function render() {
     const formContainer = document.getElementById('post-form');
     const boardNavs = document.querySelectorAll('#board-nav a[data-board]');
     
-    // Nav highlight
+    // Подсветка навигации
     boardNavs.forEach(a => {
         const isActive = a.dataset.board === STATE.board;
         a.style.textDecoration = isActive ? "underline" : "none";
         a.style.color = isActive ? "#d00" : "#005500";
     });
 
-    // Заголовок доски
+    // Заголовок
     const boardName = BOARDS[STATE.board] || "Board";
     document.getElementById('board-title').textContent = `/${STATE.board}/ - ${boardName}`;
     
     container.innerHTML = '';
     
-    // Filter posts for current board!
+    // Фильтр по доске
     const boardPosts = STATE.posts.filter(p => p.board === STATE.board);
 
-    // Current Thread Logic
+    // Проверка текущего треда
     let currentThread = null;
     if (STATE.view === 'thread') {
         currentThread = boardPosts.find(p => p.id === STATE.threadId);
         if (!currentThread) {
-            // Thread deleted or not found in THIS board -> back to catalog
             STATE.view = 'catalog'; 
         }
     }
 
     if (STATE.view === 'catalog') {
+        // КАТАЛОГ
         document.getElementById('thread-nav').classList.add('hidden');
         document.querySelector('.form-header').textContent = "Новый тред";
         formContainer.classList.remove('hidden');
 
-        // Sort: Pinned first, then Newest ID (descending)
+        // Сортировка: Пин -> Новые ID
         const threads = boardPosts.filter(p => p.parentId === 0).sort((a, b) => {
             if (a.isPinned && !b.isPinned) return -1;
             if (!a.isPinned && b.isPinned) return 1;
@@ -172,9 +186,7 @@ function render() {
             threadDiv.className = 'thread';
             
             const replies = boardPosts.filter(p => p.parentId === op.id);
-            // Sort replies by ID asc (oldest first)
             replies.sort((a,b) => a.id - b.id);
-            
             const preview = replies.slice(-3); 
             
             let html = renderPost(op, true, true, STATE.user, STATE.isAdmin, STATE.showAdminMeta);
@@ -190,7 +202,7 @@ function render() {
         });
 
     } else {
-        // Thread View
+        // ТРЕД
         document.getElementById('thread-nav').classList.remove('hidden');
         document.querySelector('.form-header').textContent = `Ответ в тред №${currentThread.id}`;
         
@@ -216,29 +228,7 @@ function render() {
     }
 }
 
-function renderAnnouncement(text) {
-    const el = document.getElementById('global-announcement');
-    const txt = document.getElementById('announcement-text');
-    const editBtn = document.getElementById('announcement-edit');
-    
-    // Обновляем текст
-    txt.textContent = text || (STATE.isAdmin ? "[Нет объявлений]" : "");
-
-    // Логика видимости
-    if (text) {
-        el.classList.remove('hidden');
-    } else {
-        // Если текста нет, показываем блок только админу (чтобы мог добавить)
-        if (STATE.isAdmin) el.classList.remove('hidden');
-        else el.classList.add('hidden');
-    }
-    
-    // Кнопка редактирования
-    if (STATE.isAdmin) editBtn.classList.remove('hidden');
-    else editBtn.classList.add('hidden');
-}
-
-// Helper to resize images
+// Сжатие
 const compressImage = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -260,9 +250,8 @@ const compressImage = (file) => new Promise((resolve, reject) => {
     reader.onerror = (err) => reject(err);
 });
 
-// --- Event Listeners ---
+// --- Events ---
 function setupEventListeners() {
-    // Board switch
     document.querySelectorAll('#board-nav a[data-board]').forEach(a => {
         a.onclick = () => {
             STATE.board = a.dataset.board;
@@ -272,7 +261,6 @@ function setupEventListeners() {
         };
     });
 
-    // Login Easter Egg
     let clicks = 0;
     let timer;
     document.getElementById('frog-logo').onclick = () => {
@@ -285,8 +273,8 @@ function setupEventListeners() {
             if (STATE.isAdmin) {
                 STATE.isAdmin = false;
                 STATE.showAdminMeta = false;
-                render(); // Перерисовываем для скрытия админских штук
-                renderAnnouncement(STATE.announcement); // Обновляем видимость объявления
+                render();
+                renderAnnouncement(STATE.announcement);
                 alert("Admin Mode OFF");
             } else {
                 document.getElementById('login-modal').classList.remove('hidden');
@@ -304,13 +292,13 @@ function setupEventListeners() {
             STATE.isAdmin = true;
             document.getElementById('login-modal').classList.add('hidden');
             
-            // Показываем элементы админки
+            // Показываем UI админа
             document.getElementById('admin-indicator').classList.remove('hidden');
             document.getElementById('admin-posting-options').classList.remove('hidden');
             document.getElementById('toggle-ids-btn').style.display = 'inline-block';
             
             render(); 
-            renderAnnouncement(STATE.announcement); // Чтобы появилась кнопка Edit
+            renderAnnouncement(STATE.announcement); 
             alert("Admin Mode ON");
         } else {
             alert("Wrong password");
@@ -318,9 +306,8 @@ function setupEventListeners() {
     };
 }
 
-// --- Global Actions (exposed to window) ---
+// --- Global Actions ---
 window.app = {
-    // Navigation
     backToCatalog: () => { STATE.view = 'catalog'; STATE.threadId = null; render(); },
     openThread: (id) => { STATE.view = 'thread'; STATE.threadId = id; render(); window.scrollTo(0,0); },
     replyTo: (id) => { 
@@ -329,7 +316,6 @@ window.app = {
         area.focus(); 
     },
     
-    // UI Helpers
     updateNamePlaceholder: () => {
         const check = document.getElementById('admin-post-as-admin');
         const input = document.getElementById('input-name');
@@ -340,34 +326,28 @@ window.app = {
         render();
     },
 
-    // Admin Actions
     editAnnouncement: async () => {
-        const newText = prompt("Текст объявления (оставьте пустым для удаления):", STATE.announcement);
+        const newText = prompt("Текст объявления (пусто для удаления):", STATE.announcement);
         if (newText === null) return;
         try {
-            // Сохраняем в специальный документ с ID 'ANNOUNCEMENT'
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', 'ANNOUNCEMENT'), { text: newText });
-        } catch(e) { alert("Ошибка сохранения: " + e.message); }
+        } catch(e) { alert("Ошибка: " + e.message); }
     },
     togglePin: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isPinned: !current }),
     toggleLock: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isLocked: !current }),
+    
     deletePost: async (docId, postId, parentId) => {
         if(!confirm("Удалить пост?")) return;
-        
         try {
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId));
-            // Каскадное удаление ответов (клиентское)
             const replies = STATE.posts.filter(p => p.parentId === postId);
             for(const r of replies) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', r._docId));
             }
             if (parentId === 0 && STATE.view === 'thread') window.app.backToCatalog();
-        } catch(e) {
-            alert("Error deleting: " + e.message);
-        }
+        } catch(e) { alert("Error deleting: " + e.message); }
     },
 
-    // Reactions
     toggleReactionPicker: (postId) => {
         const picker = document.getElementById(`picker-${postId}`);
         const isVisible = picker.style.display === 'block';
@@ -376,8 +356,6 @@ window.app = {
     },
     toggleReaction: async (docId, postId, emoji) => {
         if (!STATE.user) return;
-        
-        // Hide picker
         const picker = document.getElementById(`picker-${postId}`);
         if(picker) picker.style.display = 'none';
 
@@ -385,43 +363,31 @@ window.app = {
         const post = STATE.posts.find(p => p._docId === docId);
         if (!post) return;
         
-        // Init if needed
+        // Init map if missing
         if (!post.reactions) {
-            try {
-                await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true });
-            } catch (e) {}
+            try { await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true }); } catch (e) {}
             return;
         }
 
         let currentReaction = null;
         for (const [r, users] of Object.entries(post.reactions)) {
-            if (users.includes(STATE.user.uid)) {
-                currentReaction = r;
-                break;
-            }
+            if (users.includes(STATE.user.uid)) { currentReaction = r; break; }
         }
 
         const updates = {};
         if (currentReaction) {
             updates[`reactions.${currentReaction}`] = arrayRemove(STATE.user.uid);
-            // Swap reaction
             if (currentReaction !== emoji) {
                 updates[`reactions.${emoji}`] = arrayUnion(STATE.user.uid);
             }
         } else {
-            // New reaction
             updates[`reactions.${emoji}`] = arrayUnion(STATE.user.uid);
         }
 
-        try {
-            await updateDoc(postRef, updates);
-        } catch (e) {
-             // Fallback init
-             await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true });
-        }
+        try { await updateDoc(postRef, updates); } 
+        catch(e) { await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true }); }
     },
 
-    // Posting
     submitPost: async () => {
         if (!STATE.user) return alert("Нет соединения");
         
@@ -438,14 +404,13 @@ window.app = {
         let file = fileUrlIn.value.trim();
 
         if (fileUp.files[0]) {
-            try {
-                file = await compressImage(fileUp.files[0]);
-            } catch(e) { return alert("Ошибка файла"); }
+            try { file = await compressImage(fileUp.files[0]); } 
+            catch(e) { return alert("Ошибка файла"); }
         }
 
         if (!comment && !file) return alert("Введите текст или файл");
         
-        // Banned names check (only for non-admins)
+        // Ban check
         const BANNED_NAMES = /^(admin|administrator|mod|moderator|root|moot|pepechan)$/i;
         if (!STATE.isAdmin && BANNED_NAMES.test(name)) { return alert("Это имя зарезервировано."); }
 
@@ -453,16 +418,12 @@ window.app = {
         if (!name) name = isPostAdmin ? "Admin" : "Аноним";
 
         let ip = "Hidden";
-        try {
-            const res = await fetch('https://api.ipify.org?format=json');
-            const j = await res.json();
-            ip = j.ip;
-        } catch(e) {}
+        try { const res = await fetch('https://api.ipify.org?format=json'); const j = await res.json(); ip = j.ip; } catch(e) {}
 
         const postId = Date.now();
         const newPost = {
             id: postId,
-            board: STATE.board, // <-- ВАЖНО: Используем текущую доску из STATE
+            board: STATE.board,
             parentId: (STATE.view === 'thread') ? STATE.threadId : 0,
             name, subject, comment, file,
             date: new Date().toLocaleString('ru-RU'),
@@ -474,9 +435,7 @@ window.app = {
 
         try {
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), newPost);
-            
             subIn.value = ''; commIn.value = ''; fileUrlIn.value = ''; fileUp.value = '';
-            
             if (STATE.view === 'catalog') {
                 STATE.threadId = postId;
                 STATE.view = 'thread';
