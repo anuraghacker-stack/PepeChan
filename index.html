@@ -44,9 +44,9 @@
             <div class="subtitle">Feels good man</div>
         </header>
 
-        <!-- Форма постинга -->
-        <section class="post-form-container" id="post-form">
-            <div class="form-header">Новый тред</div>
+        <!-- Форма постинга (Строго старая структура) -->
+        <div class="post-form-container" id="post-form">
+            <div class="form-header" id="form-type-label">Новый тред</div>
             
             <div id="admin-posting-options" class="hidden">
                 <label>
@@ -55,7 +55,6 @@
                 </label>
             </div>
 
-            <!-- Вернул div вместо label, как было раньше -->
             <div class="form-row">
                 <div class="form-label">Имя</div>
                 <input type="text" id="input-name" class="form-input" placeholder="Аноним">
@@ -80,7 +79,7 @@
                     <input type="file" id="input-file-upload" accept="image/*" class="form-input" style="width:180px">
                 </div>
             </div>
-        </section>
+        </div>
 
         <!-- Навигация каталога -->
         <div class="nav-links hidden" id="thread-nav">
@@ -92,7 +91,7 @@
             <div class="loader">Загрузка тредов...</div>
         </main>
 
-        <footer>PepeChan Engine v4.3.1</footer>
+        <footer>PepeChan Engine v4.3.2</footer>
     </div>
 
     <!-- Модальное окно входа -->
