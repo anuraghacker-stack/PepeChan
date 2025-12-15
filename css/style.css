@@ -33,9 +33,13 @@ a:hover { color: #d00; text-decoration: underline; }
     display: flex; 
     justify-content: space-between; 
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 900;
 }
-.nav-links-container a { margin: 0 3px; }
-.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-links-container { font-size: 13px; }
+.nav-links-container a { margin: 0 2px; }
+.nav-right { display: flex; align-items: center; gap: 10px; font-size: 11px; }
 
 .status-loading { color: orange; font-size: 10px; }
 .status-online { color: green; font-weight: bold; font-size: 10px; }
@@ -47,16 +51,18 @@ a:hover { color: #d00; text-decoration: underline; }
     font-size: 40px; 
     cursor: help; 
     user-select: none; 
-    display: inline-block; 
+    display: inline-block;
+    margin-bottom: 5px;
 }
 #frog-logo:active { transform: scale(0.95); }
 .logo h1 { 
-    color: #2e7d32; 
+    color: #800000; 
     margin: 5px 0; 
-    font-size: 24px; 
-    text-shadow: 1px 1px 0 #fff; 
+    font-size: 28px; 
+    font-weight: bold; 
+    letter-spacing: -1px;
 }
-.subtitle { font-size: 16px; color: #446644; }
+.subtitle { font-size: 14px; color: #000; }
 
 /* --- Объявления --- */
 #global-announcement {
@@ -67,12 +73,15 @@ a:hover { color: #d00; text-decoration: underline; }
     margin: 10px auto; 
     max-width: 600px; 
     font-weight: bold;
+    text-align: center;
 }
 .announcement-edit-btn { 
     margin-left: 5px; 
     cursor: pointer; 
     color: blue; 
-    font-size: 10px; 
+    font-size: 10px;
+    font-weight: normal;
+    text-decoration: underline;
 }
 
 /* --- Формы --- */
@@ -94,6 +103,7 @@ a:hover { color: #d00; text-decoration: underline; }
     display: flex; 
     margin-bottom: 4px; 
     align-items: center; 
+    flex-wrap: wrap;
 }
 .form-label {
     background: #a5d6a7; 
@@ -150,14 +160,14 @@ textarea.form-input { height: 80px; resize: vertical; }
 }
 
 .post { 
-    /* display: flow-root заставляет контейнер растягиваться под float элементы (картинки) */
+    /* display: flow-root заставляет контейнер растягиваться под float элементы */
     display: flow-root; 
-    /* overflow: visible позволяет выпадающему меню реакций выходить за границы поста */
+    /* overflow: visible позволяет меню реакций выходить за границы поста */
     overflow: visible; 
     margin-bottom: 4px; 
 }
 
-.op-post .post-header { color: #117743; }
+.op-post .post-header { color: #0f0c5d; }
 
 .reply-container {
     background: #e0f2e0; 
@@ -167,7 +177,7 @@ textarea.form-input { height: 80px; resize: vertical; }
     display: table; 
     min-width: 300px;
     border-radius: 3px;
-    overflow: visible; /* Важно для реакций */
+    overflow: visible;
 }
 
 /* Контент поста */
@@ -228,7 +238,7 @@ textarea.form-input { height: 80px; resize: vertical; }
     margin-bottom: 2px;
 }
 .reaction-tag:hover { background: #eee; }
-.reaction-tag.active { 
+.reaction-tag.user-selected { 
     background: #c8e6c9; 
     border-color: #4caf50; 
     font-weight: bold; 
@@ -281,7 +291,10 @@ textarea.form-input { height: 80px; resize: vertical; }
     font-size: 10px; 
     font-weight: bold;
     border-radius: 2px;
+    margin-right: 10px;
 }
+#toggle-ids-btn { margin-right: 10px; font-size: 10px; }
+
 .admin-controls { font-size: 10px; margin-left: 5px; }
 .btn-control { 
     cursor: pointer; 
@@ -375,5 +388,5 @@ footer {
     .form-label { width: 60px; }
     .file-wrapper { flex-wrap: wrap; }
     #input-file-url { width: 100%; margin-bottom: 2px; }
-    #board-nav { flex-direction: column; gap: 5px; }
+    #board-nav { flex-wrap: wrap; }
 }
