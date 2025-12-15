@@ -14,11 +14,31 @@ const STATE = {
     showAdminMeta: false,
     user: null,
     posts: [],
-    unsubscribe: null
+    unsubscribe: null,
+    announcement: "" // Храним текст объявления
 };
 
 // Пароль админа
 const ADMIN_PASS = "basedpepe"; 
+
+// СПИСОК ДОСОК (Для отображения названий)
+const BOARDS = {
+    'b': 'Random',
+    'a': 'Anime & Manga',
+    'v': 'Video Games',
+    'vg': 'Video Game Generals',
+    'mu': 'Music',
+    'tv': 'Television & Film',
+    'g': 'Technology',
+    'gd': 'Graphic Design',
+    'diy': 'Do It Yourself',
+    'fit': 'Fitness',
+    'sci': 'Science & Math',
+    'his': 'History',
+    'int': 'International',
+    'po': 'Politach',
+    's': 'Software'
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     initAuth();
@@ -79,8 +99,10 @@ function startListener() {
     STATE.unsubscribe = onSnapshot(q, (snapshot) => {
         const newPosts = [];
         snapshot.forEach(doc => {
+            // Обработка специального документа с объявлением
             if (doc.id === 'ANNOUNCEMENT') {
-                renderAnnouncement(doc.data().text);
+                STATE.announcement = doc.data().text || "";
+                renderAnnouncement(STATE.announcement);
             } else {
                 newPosts.push({ _docId: doc.id, ...doc.data() });
             }
@@ -107,11 +129,15 @@ function render() {
     
     // Nav highlight
     boardNavs.forEach(a => {
-        a.style.textDecoration = (a.dataset.board === STATE.board) ? "underline" : "none";
-        a.style.color = (a.dataset.board === STATE.board) ? "#d00" : "#005500";
+        const isActive = a.dataset.board === STATE.board;
+        a.style.textDecoration = isActive ? "underline" : "none";
+        a.style.color = isActive ? "#d00" : "#005500";
     });
 
-    document.getElementById('board-title').textContent = `/${STATE.board}/`;
+    // Заголовок доски
+    const boardName = BOARDS[STATE.board] || "Board";
+    document.getElementById('board-title').textContent = `/${STATE.board}/ - ${boardName}`;
+    
     container.innerHTML = '';
     
     // Filter posts for current board!
@@ -195,17 +221,19 @@ function renderAnnouncement(text) {
     const txt = document.getElementById('announcement-text');
     const editBtn = document.getElementById('announcement-edit');
     
+    // Обновляем текст
+    txt.textContent = text || (STATE.isAdmin ? "[Нет объявлений]" : "");
+
+    // Логика видимости
     if (text) {
         el.classList.remove('hidden');
-        txt.textContent = text;
     } else {
-        el.classList.add('hidden');
-        if (STATE.isAdmin) {
-            el.classList.remove('hidden');
-            txt.textContent = "[Нет объявлений]";
-        }
+        // Если текста нет, показываем блок только админу (чтобы мог добавить)
+        if (STATE.isAdmin) el.classList.remove('hidden');
+        else el.classList.add('hidden');
     }
     
+    // Кнопка редактирования
     if (STATE.isAdmin) editBtn.classList.remove('hidden');
     else editBtn.classList.add('hidden');
 }
@@ -257,7 +285,8 @@ function setupEventListeners() {
             if (STATE.isAdmin) {
                 STATE.isAdmin = false;
                 STATE.showAdminMeta = false;
-                render();
+                render(); // Перерисовываем для скрытия админских штук
+                renderAnnouncement(STATE.announcement); // Обновляем видимость объявления
                 alert("Admin Mode OFF");
             } else {
                 document.getElementById('login-modal').classList.remove('hidden');
@@ -274,11 +303,14 @@ function setupEventListeners() {
         if (pass === ADMIN_PASS) {
             STATE.isAdmin = true;
             document.getElementById('login-modal').classList.add('hidden');
+            
+            // Показываем элементы админки
             document.getElementById('admin-indicator').classList.remove('hidden');
             document.getElementById('admin-posting-options').classList.remove('hidden');
             document.getElementById('toggle-ids-btn').style.display = 'inline-block';
-            document.getElementById('announcement-edit').classList.remove('hidden');
-            render();
+            
+            render(); 
+            renderAnnouncement(STATE.announcement); // Чтобы появилась кнопка Edit
             alert("Admin Mode ON");
         } else {
             alert("Wrong password");
@@ -310,23 +342,29 @@ window.app = {
 
     // Admin Actions
     editAnnouncement: async () => {
-        const newText = prompt("Текст объявления (пусто для удаления):");
+        const newText = prompt("Текст объявления (оставьте пустым для удаления):", STATE.announcement);
         if (newText === null) return;
         try {
+            // Сохраняем в специальный документ с ID 'ANNOUNCEMENT'
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', 'ANNOUNCEMENT'), { text: newText });
-        } catch(e) { alert("Ошибка: " + e.message); }
+        } catch(e) { alert("Ошибка сохранения: " + e.message); }
     },
     togglePin: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isPinned: !current }),
     toggleLock: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isLocked: !current }),
     deletePost: async (docId, postId, parentId) => {
         if(!confirm("Удалить пост?")) return;
-        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId));
-        // Simple cascade
-        const replies = STATE.posts.filter(p => p.parentId === postId);
-        for(const r of replies) {
-            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', r._docId));
+        
+        try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId));
+            // Каскадное удаление ответов (клиентское)
+            const replies = STATE.posts.filter(p => p.parentId === postId);
+            for(const r of replies) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', r._docId));
+            }
+            if (parentId === 0 && STATE.view === 'thread') window.app.backToCatalog();
+        } catch(e) {
+            alert("Error deleting: " + e.message);
         }
-        if (parentId === 0 && STATE.view === 'thread') window.app.backToCatalog();
     },
 
     // Reactions
@@ -338,34 +376,38 @@ window.app = {
     },
     toggleReaction: async (docId, postId, emoji) => {
         if (!STATE.user) return;
-        const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId);
         
         // Hide picker
         const picker = document.getElementById(`picker-${postId}`);
         if(picker) picker.style.display = 'none';
 
-        // Check current reaction of user
+        const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId);
         const post = STATE.posts.find(p => p._docId === docId);
         if (!post) return;
         
+        // Init if needed
+        if (!post.reactions) {
+            try {
+                await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true });
+            } catch (e) {}
+            return;
+        }
+
         let currentReaction = null;
-        if (post.reactions) {
-            for (const [r, users] of Object.entries(post.reactions)) {
-                if (users.includes(STATE.user.uid)) {
-                    currentReaction = r;
-                    break;
-                }
+        for (const [r, users] of Object.entries(post.reactions)) {
+            if (users.includes(STATE.user.uid)) {
+                currentReaction = r;
+                break;
             }
         }
 
         const updates = {};
         if (currentReaction) {
             updates[`reactions.${currentReaction}`] = arrayRemove(STATE.user.uid);
-            // If selecting different one, add it (Swap)
+            // Swap reaction
             if (currentReaction !== emoji) {
                 updates[`reactions.${emoji}`] = arrayUnion(STATE.user.uid);
             }
-            // If selecting same, it just removes (Toggle Off)
         } else {
             // New reaction
             updates[`reactions.${emoji}`] = arrayUnion(STATE.user.uid);
@@ -373,11 +415,9 @@ window.app = {
 
         try {
             await updateDoc(postRef, updates);
-        } catch(e) {
-            // Init map if missing
-            if (e.code === 'not-found' || e.message.includes('map')) {
-                await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true });
-            }
+        } catch (e) {
+             // Fallback init
+             await setDoc(postRef, { reactions: { [emoji]: [STATE.user.uid] } }, { merge: true });
         }
     },
 
@@ -405,6 +445,10 @@ window.app = {
 
         if (!comment && !file) return alert("Введите текст или файл");
         
+        // Banned names check (only for non-admins)
+        const BANNED_NAMES = /^(admin|administrator|mod|moderator|root|moot|pepechan)$/i;
+        if (!STATE.isAdmin && BANNED_NAMES.test(name)) { return alert("Это имя зарезервировано."); }
+
         const isPostAdmin = STATE.isAdmin && adminCheck?.checked;
         if (!name) name = isPostAdmin ? "Admin" : "Аноним";
 
@@ -418,7 +462,7 @@ window.app = {
         const postId = Date.now();
         const newPost = {
             id: postId,
-            board: STATE.board, // <-- MUST BE CURRENT BOARD
+            board: STATE.board, // <-- ВАЖНО: Используем текущую доску из STATE
             parentId: (STATE.view === 'thread') ? STATE.threadId : 0,
             name, subject, comment, file,
             date: new Date().toLocaleString('ru-RU'),
@@ -430,13 +474,12 @@ window.app = {
 
         try {
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), newPost);
-            // Clear form
+            
             subIn.value = ''; commIn.value = ''; fileUrlIn.value = ''; fileUp.value = '';
-            // If creating a NEW thread in catalog, switch to it
+            
             if (STATE.view === 'catalog') {
                 STATE.threadId = postId;
                 STATE.view = 'thread';
-                // Render will happen automatically via listener, but we can optimistically switch view context
             }
         } catch(e) {
             if (e.code === 'resource-exhausted') alert("Файл слишком большой (>1МБ)");
