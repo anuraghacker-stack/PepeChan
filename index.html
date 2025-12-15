@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
 </head>
 <body>
 
-    <!-- Навигация -->
+    <!-- Navigation -->
     <nav id="board-nav">
         <div class="nav-links-container">
             [ 
@@ -31,10 +31,10 @@
     </nav>
 
     <div class="container">
-        <!-- Логотип -->
+        <!-- Logo -->
         <header class="logo">
-            <div id="frog-logo" title="Кликни 10 раз для входа">🐸</div>
-            <h1 id="board-title">/b/ - Бред</h1>
+            <div id="frog-logo" title="Click 10 times to login">🐸</div>
+            <h1 id="board-title">/b/ - Random</h1>
             
             <div id="global-announcement" class="hidden">
                 <span id="announcement-text"></span>
@@ -44,64 +44,64 @@
             <div class="subtitle">Feels good man</div>
         </header>
 
-        <!-- Форма постинга (Строго старая структура) -->
+        <!-- Posting Form -->
         <div class="post-form-container" id="post-form">
-            <div class="form-header" id="form-type-label">Новый тред</div>
+            <div class="form-header" id="form-type-label">New Thread</div>
             
             <div id="admin-posting-options" class="hidden">
                 <label>
                     <input type="checkbox" id="admin-post-as-admin" onchange="window.app.updateNamePlaceholder()"> 
-                    Постить как Admin
+                    Post as Admin
                 </label>
             </div>
 
             <div class="form-row">
-                <div class="form-label">Имя</div>
-                <input type="text" id="input-name" class="form-input" placeholder="Аноним">
+                <div class="form-label">Name</div>
+                <input type="text" id="input-name" class="form-input" placeholder="Anonymous">
             </div>
             
             <div class="form-row">
-                <div class="form-label">Тема</div>
+                <div class="form-label">Subject</div>
                 <input type="text" id="input-subject" class="form-input">
-                <button class="submit-btn" onclick="window.app.submitPost()">Отправить</button>
+                <button class="submit-btn" onclick="window.app.submitPost()">Submit</button>
             </div>
             
             <div class="form-row">
-                <div class="form-label">Текст</div>
+                <div class="form-label">Comment</div>
                 <textarea id="input-comment" class="form-input"></textarea>
             </div>
             
             <div class="form-row">
-                <div class="form-label">Файл</div>
+                <div class="form-label">File</div>
                 <div class="file-wrapper">
-                    <input type="text" id="input-file-url" class="form-input" placeholder="URL картинки...">
-                    <span class="separator">или</span>
+                    <input type="text" id="input-file-url" class="form-input" placeholder="Image URL...">
+                    <span class="separator">or</span>
                     <input type="file" id="input-file-upload" accept="image/*" class="form-input" style="width:180px">
                 </div>
             </div>
         </div>
 
-        <!-- Навигация каталога -->
+        <!-- Catalog Navigation -->
         <div class="nav-links hidden" id="thread-nav">
-            <hr> [ <a id="back-to-catalog" onclick="window.app.backToCatalog()">Назад в каталог</a> ] <hr>
+            <hr> [ <a id="back-to-catalog" onclick="window.app.backToCatalog()">Return to Catalog</a> ] <hr>
         </div>
 
-        <!-- Контейнер постов -->
+        <!-- Content Container -->
         <main id="main-content">
-            <div class="loader">Загрузка тредов...</div>
+            <div class="loader">Loading threads...</div>
         </main>
 
         <footer>PepeChan Engine v4.3.2</footer>
     </div>
 
-    <!-- Модальное окно входа -->
+    <!-- Login Modal -->
     <div id="login-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3>Admin Access</h3>
             <input type="password" id="admin-pass-input" class="modal-input" placeholder="Password">
             <div class="modal-buttons">
-                <button id="modal-login-btn" class="modal-btn">Войти</button>
-                <button id="modal-close-btn" class="modal-btn close">Закрыть</button>
+                <button id="modal-login-btn" class="modal-btn">Login</button>
+                <button id="modal-close-btn" class="modal-btn close">Close</button>
             </div>
         </div>
     </div>
