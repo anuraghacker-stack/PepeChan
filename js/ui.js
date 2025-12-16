@@ -6,21 +6,20 @@ export function renderPost(post, isOp, isCatalog, user, isAdminMode, showMeta) {
     
     let imageHtml = '';
     if (post.file) {
-        // Определяем тип файла: base64 или ссылка
+        // Простая проверка: если начинается с data:image - это base64, иначе считаем URL
         const isBase64 = post.file.startsWith('data:image');
         const hrefLink = isBase64 ? '#' : post.file;
         const linkAttr = isBase64 ? `onclick="window.app.toggleImage(this.parentElement.nextElementSibling); return false;"` : `target="_blank" rel="noopener noreferrer"`;
-        const linkText = isBase64 ? '(Картинка)' : 'Ссылка';
+        const linkText = isBase64 ? '(Image)' : 'Link';
         
         imageHtml = `
-            <div class="file-info">Файл: <a href="${hrefLink}" ${linkAttr}>${linkText}</a></div>
+            <div class="file-info">File: <a href="${hrefLink}" ${linkAttr}>${linkText}</a></div>
             <img src="${post.file}" class="post-image" loading="lazy" referrerpolicy="no-referrer" onclick="this.classList.toggle('expanded')"
                  onerror="this.onerror=null; this.src='https://placehold.co/200?text=Error'; this.style.border='1px solid red';">
         `;
     }
 
-    // Отображение имени
-    let nameDisplay = post.name || "Аноним";
+    let nameDisplay = post.name || "Anonymous";
     let nameClass = "name";
     
     if (post.isAdmin) {
@@ -29,14 +28,12 @@ export function renderPost(post, isOp, isCatalog, user, isAdminMode, showMeta) {
         else nameDisplay = `${nameDisplay} ## Admin`;
     }
 
-    // Иконки статуса треда
     let statusIcons = "";
     if (isOp) {
         if (post.isPinned) statusIcons += `<span class="icon-pinned">📌</span>`;
         if (post.isLocked) statusIcons += `<span class="icon-locked">🔒</span>`;
     }
 
-    // Кнопки админа
     let adminControls = "";
     if (isAdminMode) {
         if (showMeta) {
@@ -55,10 +52,8 @@ export function renderPost(post, isOp, isCatalog, user, isAdminMode, showMeta) {
         adminControls += `</span>`;
     }
 
-    // Рендер реакций
     const reactionsHtml = renderReactions(post, user);
 
-    // Сборка заголовка поста
     const headerHtml = `
         ${statusIcons}
         <span class="subject">${escapeHtml(post.subject || '')}</span>
@@ -66,7 +61,7 @@ export function renderPost(post, isOp, isCatalog, user, isAdminMode, showMeta) {
         <span class="date">${post.date}</span>
         <span class="post-number" onclick="window.app.replyTo(${post.id})">No.${post.id}</span>
         ${adminControls}
-        ${isOp && isCatalog && !post.isLocked ? `[<a onclick="window.app.openThread(${post.id})">Ответ</a>]` : ''}
+        ${isOp && isCatalog && !post.isLocked ? `[<a onclick="window.app.openThread(${post.id})">Reply</a>]` : ''}
     `;
 
     const contentClass = isOp ? "post op-post" : "reply-container";
@@ -87,7 +82,6 @@ function renderReactions(post, user) {
     const myUid = user ? user.uid : null;
     const reactions = post.reactions || {};
     
-    // Рендер активных тегов реакций
     let tagsHtml = '';
     REACTION_TYPES.forEach(emoji => {
         const users = reactions[emoji] || [];
@@ -102,7 +96,6 @@ function renderReactions(post, user) {
         }
     });
     
-    // Рендер выпадающего меню
     let pickerHtml = `<div class="reaction-picker" id="picker-${post.id}" style="display:none;">`;
     REACTION_TYPES.forEach(emoji => {
         pickerHtml += `<span class="reaction-option" onclick="window.app.toggleReaction('${post._docId}', ${post.id}, '${emoji}')">${emoji}</span>`;
