@@ -12,15 +12,12 @@ const firebaseConfig = {
   appId: "1:805918011698:web:2c8fa7ba6e76cf9648672b"
 };
 
-// Инициализация приложения
+// Инициализация
 const app = initializeApp(firebaseConfig);
-
-// Инициализация сервисов
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// ID коллекции в базе данных (не меняйте это, если хотите сохранить старые посты)
+// ID коллекции в базе данных
 const appId = 'pepechan-public-v1'; 
 
-// Экспорт для использования в других файлах (app.js)
 export { app, db, auth, appId };
