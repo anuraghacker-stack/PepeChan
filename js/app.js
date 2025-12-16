@@ -14,8 +14,8 @@ const STATE = {
     showAdminMeta: false,
     user: null,
     posts: [],
-    unsubscribePosts: null,    // Слушатель постов
-    unsubscribeAnnounce: null, // Слушатель объявлений
+    unsubscribePosts: null,
+    unsubscribeAnnounce: null,
     announcement: ""
 };
 
@@ -84,20 +84,19 @@ function startListeners() {
     STATE.unsubscribePosts = onSnapshot(q, (snapshot) => {
         const newPosts = [];
         snapshot.forEach(doc => {
-            // Игнорируем документ с объявлением в массиве постов
             if (doc.id !== 'ANNOUNCEMENT') {
                 newPosts.push({ _docId: doc.id, ...doc.data() });
             }
         });
         STATE.posts = newPosts;
         updateStatus(true);
-        render(); // Перерисовываем контент
+        render();
     }, (err) => {
         console.error("Posts DB Error", err);
         updateStatus(false, "DB Error");
     });
 
-    // 2. Слушатель ОБЪЯВЛЕНИЙ (Отдельно)
+    // 2. Слушатель ОБЪЯВЛЕНИЙ
     if (STATE.unsubscribeAnnounce) STATE.unsubscribeAnnounce();
     
     const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', 'ANNOUNCEMENT');
@@ -108,31 +107,10 @@ function startListeners() {
         } else {
             STATE.announcement = "";
         }
-        renderAnnouncement(STATE.announcement); // Перерисовываем только шапку
+        renderAnnouncement(STATE.announcement);
     }, (err) => {
         console.warn("Announce DB Error (Ignore if not exists)", err);
     });
-}
-
-function renderAnnouncement(text) {
-    const el = document.getElementById('global-announcement');
-    const txt = document.getElementById('announcement-text');
-    const editBtn = document.getElementById('announcement-edit');
-    
-    // Текст
-    txt.textContent = text || (STATE.isAdmin ? "[Нет объявлений]" : "");
-
-    // Видимость
-    if (text) {
-        el.classList.remove('hidden');
-    } else {
-        if (STATE.isAdmin) el.classList.remove('hidden');
-        else el.classList.add('hidden');
-    }
-    
-    // Кнопка
-    if (STATE.isAdmin) editBtn.classList.remove('hidden');
-    else editBtn.classList.add('hidden');
 }
 
 // --- Render Logic ---
@@ -169,7 +147,7 @@ function render() {
     if (STATE.view === 'catalog') {
         // КАТАЛОГ
         document.getElementById('thread-nav').classList.add('hidden');
-        document.querySelector('.form-header').textContent = "Новый тред";
+        document.querySelector('.form-header').textContent = "New Thread";
         formContainer.classList.remove('hidden');
 
         // Сортировка: Пин -> Новые ID
@@ -179,7 +157,7 @@ function render() {
             return b.id - a.id;
         });
 
-        if (threads.length === 0) container.innerHTML = '<div style="text-align:center; padding:20px;">Доска пуста.</div>';
+        if (threads.length === 0) container.innerHTML = '<div style="text-align:center; padding:20px;">Empty board.</div>';
 
         threads.forEach(op => {
             const threadDiv = document.createElement('div');
@@ -191,7 +169,7 @@ function render() {
             
             let html = renderPost(op, true, true, STATE.user, STATE.isAdmin, STATE.showAdminMeta);
             if (replies.length > 3) {
-                html += `<div style="margin-left:20px; color:#557755; font-style:italic; font-size:12px;">Пропущено ${replies.length - 3} ответов. Нажмите "Ответ" чтобы читать.</div>`;
+                html += `<div style="margin-left:20px; font-style:italic; font-size:12px; opacity:0.7;">Omitted ${replies.length - 3} posts. Click Reply to view.</div>`;
             }
             preview.forEach(rep => {
                 html += renderPost(rep, false, false, STATE.user, STATE.isAdmin, STATE.showAdminMeta);
@@ -204,11 +182,11 @@ function render() {
     } else {
         // ТРЕД
         document.getElementById('thread-nav').classList.remove('hidden');
-        document.querySelector('.form-header').textContent = `Ответ в тред №${currentThread.id}`;
+        document.querySelector('.form-header').textContent = `Reply to Thread #${currentThread.id}`;
         
         if (currentThread.isLocked) {
             formContainer.classList.add('hidden');
-            container.innerHTML = `<h3 style="text-align:center; color:red">Тред закрыт 🔒</h3>`;
+            container.innerHTML = `<h3 style="text-align:center; color:red">Thread Locked 🔒</h3>`;
         } else {
             formContainer.classList.remove('hidden');
         }
@@ -228,7 +206,24 @@ function render() {
     }
 }
 
-// Сжатие
+function renderAnnouncement(text) {
+    const el = document.getElementById('global-announcement');
+    const txt = document.getElementById('announcement-text');
+    const editBtn = document.getElementById('announcement-edit');
+    
+    txt.textContent = text || (STATE.isAdmin ? "[No Announcements]" : "");
+
+    if (text) {
+        el.classList.remove('hidden');
+    } else {
+        if (STATE.isAdmin) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    }
+    
+    if (STATE.isAdmin) editBtn.classList.remove('hidden');
+    else editBtn.classList.add('hidden');
+}
+
 const compressImage = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -250,7 +245,7 @@ const compressImage = (file) => new Promise((resolve, reject) => {
     reader.onerror = (err) => reject(err);
 });
 
-// --- Events ---
+// --- Event Listeners ---
 function setupEventListeners() {
     document.querySelectorAll('#board-nav a[data-board]').forEach(a => {
         a.onclick = () => {
@@ -292,7 +287,6 @@ function setupEventListeners() {
             STATE.isAdmin = true;
             document.getElementById('login-modal').classList.add('hidden');
             
-            // Показываем UI админа
             document.getElementById('admin-indicator').classList.remove('hidden');
             document.getElementById('admin-posting-options').classList.remove('hidden');
             document.getElementById('toggle-ids-btn').style.display = 'inline-block';
@@ -306,7 +300,7 @@ function setupEventListeners() {
     };
 }
 
-// --- Global Actions ---
+// --- Global Actions (exposed to window) ---
 window.app = {
     backToCatalog: () => { STATE.view = 'catalog'; STATE.threadId = null; render(); },
     openThread: (id) => { STATE.view = 'thread'; STATE.threadId = id; render(); window.scrollTo(0,0); },
@@ -319,7 +313,7 @@ window.app = {
     updateNamePlaceholder: () => {
         const check = document.getElementById('admin-post-as-admin');
         const input = document.getElementById('input-name');
-        input.placeholder = (STATE.isAdmin && check?.checked) ? "Admin" : "Аноним";
+        input.placeholder = (STATE.isAdmin && check?.checked) ? "Admin" : "Anonymous";
     },
     toggleAdminView: () => {
         STATE.showAdminMeta = !STATE.showAdminMeta;
@@ -327,17 +321,17 @@ window.app = {
     },
 
     editAnnouncement: async () => {
-        const newText = prompt("Текст объявления (пусто для удаления):", STATE.announcement);
+        const newText = prompt("Announcement text (empty to delete):", STATE.announcement);
         if (newText === null) return;
         try {
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', 'ANNOUNCEMENT'), { text: newText });
-        } catch(e) { alert("Ошибка: " + e.message); }
+        } catch(e) { alert("Error saving: " + e.message); }
     },
     togglePin: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isPinned: !current }),
     toggleLock: (docId, current) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId), { isLocked: !current }),
     
     deletePost: async (docId, postId, parentId) => {
-        if(!confirm("Удалить пост?")) return;
+        if(!confirm("Delete this post?")) return;
         try {
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId));
             const replies = STATE.posts.filter(p => p.parentId === postId);
@@ -389,7 +383,7 @@ window.app = {
     },
 
     submitPost: async () => {
-        if (!STATE.user) return alert("Нет соединения");
+        if (!STATE.user) return alert("No connection");
         
         const nameIn = document.getElementById('input-name');
         const subIn = document.getElementById('input-subject');
@@ -405,17 +399,16 @@ window.app = {
 
         if (fileUp.files[0]) {
             try { file = await compressImage(fileUp.files[0]); } 
-            catch(e) { return alert("Ошибка файла"); }
+            catch(e) { return alert("File processing error"); }
         }
 
-        if (!comment && !file) return alert("Введите текст или файл");
+        if (!comment && !file) return alert("Enter text or file");
         
-        // Ban check
         const BANNED_NAMES = /^(admin|administrator|mod|moderator|root|moot|pepechan)$/i;
-        if (!STATE.isAdmin && BANNED_NAMES.test(name)) { return alert("Это имя зарезервировано."); }
+        if (!STATE.isAdmin && BANNED_NAMES.test(name)) { return alert("Reserved name."); }
 
         const isPostAdmin = STATE.isAdmin && adminCheck?.checked;
-        if (!name) name = isPostAdmin ? "Admin" : "Аноним";
+        if (!name) name = isPostAdmin ? "Admin" : "Anonymous";
 
         let ip = "Hidden";
         try { const res = await fetch('https://api.ipify.org?format=json'); const j = await res.json(); ip = j.ip; } catch(e) {}
@@ -426,7 +419,7 @@ window.app = {
             board: STATE.board,
             parentId: (STATE.view === 'thread') ? STATE.threadId : 0,
             name, subject, comment, file,
-            date: new Date().toLocaleString('ru-RU'),
+            date: new Date().toLocaleString('en-US'),
             authorUid: STATE.user.uid,
             isAdmin: isPostAdmin,
             ip: ip,
@@ -441,8 +434,8 @@ window.app = {
                 STATE.view = 'thread';
             }
         } catch(e) {
-            if (e.code === 'resource-exhausted') alert("Файл слишком большой (>1МБ)");
-            else alert("Ошибка: " + e.message);
+            if (e.code === 'resource-exhausted') alert("File too large (>1MB)");
+            else alert("Error: " + e.message);
         }
     }
 };
